@@ -18,12 +18,31 @@
 
 create_datavyu_trial_data <- function(data, write = F){
 
+  idx <- which(duplicated(names(data)))
+  if(length(idx) > 0){
+    warning('You have multiple columns with the same name. We shall proceed anyway, but you may wish to remove and try again!')
+    data <- data[,-idx]
+  }
+
   if('TrialLook.looking_direction' %in% names(data)){
     dvdata <- data %>%
       mutate(direction = TrialLook.looking_direction)
-  }else{
+  }else{if('TrialLook.looking_code01' %in% names(data)){
     dvdata <- data %>%
       mutate(direction = TrialLook.looking_code01)
+  }else{
+    dvdata <- data %>%
+      mutate(dßirection = Looking.direction)
+  }
+  }
+
+  if('ID.run' %in% names(data)){
+    dvdata <- dvdata %>%
+      rename(SubID.SUBID = ID.run,
+             SubID.onset = ID.onset,
+             #TrialLook.onset = Looking.onset,
+             #TrialLook.offset = Looking.offset,
+             TrialLook.trials_trialnum = TrialLook.trials_trial)
   }
 
   dvsubj <- dvdata %>%
@@ -63,7 +82,8 @@ create_datavyu_trial_data <- function(data, write = F){
            Both = ifelse(Left > 0 & Right > 0, 'Y', 'N'),
            ToCode = 'Coded') %>%
     ungroup() %>%
-    mutate(ID = stringr::str_remove(ID, '_'))
+    mutate(ID = stringr::str_remove(ID, '_')) %>%
+    filter(!is.na(TLT))
 
   if(write == T){
     write_csv(dvdata4, paste('Coded_Data', '.csv', sep = ''))

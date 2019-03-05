@@ -69,10 +69,14 @@ create_datavyu_trial_data <- function(data, write = F){
     filter(!is.na(Duration)) %>%
     rename(ID = SubID.SUBID.x) %>%
     select(ID, Trial, ChangeSide, Load, Direction, Duration, Left, Right) %>%
+    filter(Direction == 'L' | Direction == 'R') %>%
     group_by(ID, Trial, ChangeSide, Load) %>%
+    mutate(Switch = 0) %>%
+    mutate(Switch = ifelse(lag(Direction) != Direction, 1, 0)) %>%
+    mutate(Switch = ifelse(is.na(Switch), 0, Switch)) %>%
     summarise(Left = sum(Left),
               Right = sum(Right),
-              Switch = length(Direction) - 1,
+              Switch = sum(Switch),
               Looks = length(Direction),
               TLT = sum(Left) + sum(Right)) %>%
     mutate(PercLook = TLT/10000,

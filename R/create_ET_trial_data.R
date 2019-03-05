@@ -24,6 +24,8 @@ create_ET_trial_data <- function(data, task, write = F){
   ETdata2 <- ETd %>%
     filter(task == task,
            CURRENT_FIX_INTEREST_AREA_LABEL != '.') %>%
+    mutate(CURRENT_FIX_INTEREST_AREA_LABEL = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == 'LEFT_IA', 'LEFT_BIA', CURRENT_FIX_INTEREST_AREA_LABEL),
+           CURRENT_FIX_INTEREST_AREA_LABEL = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == 'RIGHT_IA', 'RIGHT_BIA', CURRENT_FIX_INTEREST_AREA_LABEL)) %>%
     mutate(LEFT = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == 'LEFT_BIA', CURRENT_FIX_DURATION, 0),
            RIGHT = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == 'RIGHT_BIA', CURRENT_FIX_DURATION, 0)) %>%
     mutate(SWITCH = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == lag(CURRENT_FIX_INTEREST_AREA_LABEL), 0, 1)) %>%
@@ -41,7 +43,7 @@ create_ET_trial_data <- function(data, task, write = F){
            SR = Switch/(TLT/1000),
            CP = ifelse(ChangeSide == 'Left', Left/TLT, Right/TLT),
            Both = ifelse(Left > 0 & Right > 0, 'Y', 'N'),
-           ToCode = ifelse(Both == 'NAY' | PercLook < .4, 'Y', 'N')) %>%
+           ToCode = ifelse(Both == 'N' | PercLook < .4, 'Y', 'N')) %>%
     ungroup()
 
   All <- ETd %>%

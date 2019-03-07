@@ -28,16 +28,20 @@ create_ET_trial_data <- function(data, task, write = F){
            CURRENT_FIX_INTEREST_AREA_LABEL = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == 'RIGHT_IA', 'RIGHT_BIA', CURRENT_FIX_INTEREST_AREA_LABEL)) %>%
     mutate(LEFT = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == 'LEFT_BIA', CURRENT_FIX_DURATION, 0),
            RIGHT = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == 'RIGHT_BIA', CURRENT_FIX_DURATION, 0)) %>%
-    mutate(SWITCH = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == lag(CURRENT_FIX_INTEREST_AREA_LABEL), 0, 1)) %>%
     group_by(RECORDING_SESSION_LABEL, trial) %>%
+    mutate(LOOKS = ifelse(CURRENT_FIX_RUN_INDEX ==1, 1, 0)) %>%
+    filter(CURRENT_FIX_INTEREST_AREA_LABEL == 'LEFT_BIA' | CURRENT_FIX_INTEREST_AREA_LABEL == 'RIGHT_BIA') %>%
+    mutate(SWITCH = 0 ) %>%
+    mutate(SWITCH = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == lag(CURRENT_FIX_INTEREST_AREA_LABEL), 0, 1)) %>%
+    mutate(SWITCH = ifelse(is.na(SWITCH), 0, SWITCH)) %>%
     summarise(ChangeSide = first(side),
               Load = first(condition),
               Left = sum(LEFT),
               Right = sum(RIGHT),
-              Switch = sum(SWITCH)
+              Switch = sum(SWITCH),
+              Looks = sum(LOOKS)
     ) %>%
-    mutate(Looks = Switch + 1,
-           TLT = Left + Right,
+    mutate(TLT = Left + Right,
            PercLook = TLT/10000,
            MLD = TLT/Looks,
            SR = Switch/(TLT/1000),

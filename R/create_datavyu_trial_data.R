@@ -32,7 +32,7 @@ create_datavyu_trial_data <- function(data, write = F){
       mutate(direction = TrialLook.looking_code01)
   }else{
     dvdata <- data %>%
-      mutate(dßirection = Looking.direction)
+      mutate(direction = Looking.direction)
   }
   }
 
@@ -56,7 +56,8 @@ create_datavyu_trial_data <- function(data, write = F){
            ChangeSide = TrialLook.trials_changeside) %>%
     filter(!is.na(Trial)) %>%
     rename(Direction = direction) %>%
-    mutate(Direction = stringr::str_to_upper(Direction)) %>%
+    mutate(Direction = stringr::str_to_upper(Direction),
+           ChangeSide = stringr::str_to_upper(ChangeSide)) %>%
     mutate(Duration = TrialLook.offset - TrialLook.onset,
            Left = ifelse(Direction == 'R', Duration, 0),
            Right = ifelse(Direction == 'L', Duration, 0))

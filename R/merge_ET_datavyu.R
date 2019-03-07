@@ -29,11 +29,8 @@ merge_ET_datavyu <- function(ETdata, datavyudata, write = FALSE){
   all2 <- all %>%
     arrange(ID, Trial) %>%
     group_by(ID, Trial) %>%
-    mutate(remove = ifelse(ToCode == 'Coded' & lead(ToCode) == 'N',
+    mutate(remove = ifelse((ToCode == 'Coded' & lead(ToCode) == 'N') | (ToCode == 'Y' & lag(ToCode) == 'Coded'),
                             'Y', 'N')) %>%
-    filter(remove != 'Y') %>%
-    mutate(remove = ifelse(ToCode == 'Y' & lag(ToCode) == 'Coded',
-                           'Y', 'N')) %>%
     mutate(remove = ifelse(is.na(remove), 'N', remove)) %>%
     filter(remove != 'Y')
 

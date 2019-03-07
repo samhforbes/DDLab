@@ -62,6 +62,12 @@ create_datavyu_trial_data <- function(data, write = F){
            Left = ifelse(Direction == 'R', Duration, 0),
            Right = ifelse(Direction == 'L', Duration, 0))
   #switched perspective
+  for(i in 1:nrow(dvdata2)){
+
+    if(length(dvdata2$ChangeSide[i]) > 1){
+      warning('Please ensure change side is coded with one letter - you currently have other things in there. Please fix')
+    }
+  }
 
   dvdata3 <- merge(dvsubj, dvdata2, by = 'TrialLook.offset', all = T)
 

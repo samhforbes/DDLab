@@ -45,7 +45,7 @@ create_ET_trial_data <- function(data, task, write = F){
            PercLook = TLT/10000,
            MLD = TLT/Looks,
            SR = Switch/(TLT/1000),
-           CP = ifelse(ChangeSide == 'Left', Left/TLT, Right/TLT),
+           CP = ifelse(ChangeSide == 'L', Left/TLT, Right/TLT),
            Both = ifelse(Left > 0 & Right > 0, 'Y', 'N'),
            ToCode = ifelse(Both == 'N' | PercLook < .4, 'Y', 'N')) %>%
     ungroup()

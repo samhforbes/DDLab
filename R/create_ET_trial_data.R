@@ -62,7 +62,9 @@ create_ET_trial_data <- function(data, task, write = F){
   data_out <- data_out %>%
     mutate(ToCode = ifelse(is.na(ToCode), 'Y', ToCode)) %>%
     rename(ID = RECORDING_SESSION_LABEL,
-           Trial = trial)
+           Trial = trial) %>%
+    mutate(Trial = as.numeric(Trial)) %>%
+    arrange(ID, Trial)
 
   if(write == T){
   write_csv(data_out, paste('Clean_Data_', task, '.csv', sep = ''))

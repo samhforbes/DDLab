@@ -7,6 +7,7 @@
 #' @param data a dataframe read in from a fixation report CSV or txt
 #' @param task in quotes, a string regarding the task you are interested in from the task column
 #' @param write if TRUE will save a csv in the current working directory
+#' @param show_all_missing if T will assume 18 trials per participant and leave blank rows
 #'
 #' @examples
 #' library(readr)
@@ -17,7 +18,7 @@
 #'
 #' @return A formatted dataframe with CP, SwitchRate, MLD and TLT, as well as coding info.
 
-create_ET_trial_data <- function(data, task, write = F){
+create_ET_trial_data <- function(data, task, write = F, show_all_missing = F){
 
   ETd <- data
 
@@ -66,11 +67,23 @@ create_ET_trial_data <- function(data, task, write = F){
     mutate(Trial = as.numeric(Trial)) %>%
     arrange(ID, Trial)
 
+  if(show_all_missing == T){
+    ID <- rep(unique(data_out$ID), each = 18)
+    Trial <- rep(c(1:18), times = length(unique(data_out$ID)))
+
+    datum <- data.frame(ID, Trial)
+
+    data_out2 <- merge(datum, data_out, by = c('ID', 'Trial'), all = T, sort = F)
+
+    data_out2 <- data_out2 %>%
+      arrange(ID, Trial)
+  }else{data_out2 <- data_out}
+
   if(write == T){
-  write_csv(data_out, paste('Clean_Data_', task, '.csv', sep = ''))
+    write_csv(data_out2, paste('Clean_Data_', task, '.csv', sep = ''))
   }
 
-  return(data_out)
+  return(data_out2)
 }
 
 

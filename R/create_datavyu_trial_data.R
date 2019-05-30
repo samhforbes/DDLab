@@ -24,6 +24,10 @@ create_datavyu_trial_data <- function(data, write = F){
     data <- data[,-idx]
   }
 
+  if('TrialLook.trials_trialnum' %in% names(data)){
+    data <- data %>%
+      rename('TrialLook.trials_trial' = 'TrialLook.trials_trialnum')
+  }
   if('TrialLook.looking_direction' %in% names(data)){
     dvdata <- data %>%
       mutate(direction = TrialLook.looking_direction)
@@ -46,11 +50,12 @@ create_datavyu_trial_data <- function(data, write = F){
   }
 
   dvsubj <- dvdata %>%
-    select(SubID.SUBID, SubID.onset) %>%
+    select(SubID.SUBID, ID.subnumber, SubID.onset) %>%
     rename(TrialLook.offset = SubID.onset) %>%
     filter(!is.na(SubID.SUBID))
 
   dvdata2 <- dvdata %>%
+    fill(ID.subnumber) %>%
     mutate(Trial = TrialLook.trials_trialnum,
            Load = TrialLook.trials_ss,
            ChangeSide = TrialLook.trials_changeside) %>%
@@ -61,6 +66,9 @@ create_datavyu_trial_data <- function(data, write = F){
     mutate(Duration = TrialLook.offset - TrialLook.onset,
            Left = ifelse(Direction == 'R', Duration, 0),
            Right = ifelse(Direction == 'L', Duration, 0))
+
+
+
   #switched perspective
   for(i in 1:nrow(dvdata2)){
 
@@ -69,9 +77,13 @@ create_datavyu_trial_data <- function(data, write = F){
     }
   }
 
-  dvdata3 <- merge(dvsubj, dvdata2, by = 'TrialLook.offset', all = T)
+  dvdata3 <- merge(dvsubj, dvdata2, by = c('ID.subnumber', 'TrialLook.offset'), all = T, sort = F)
 
-  dvdata4 <- dvdata3 %>%
+  dvdata33 <- dvdata3 %>%
+    arrange(ID.subnumber, TrialLook.offset) #%>%
+    #mutate(SubID.SUBID.x = ifelse(is.na(SubID.SUBID.x), SubID.SUBID.y, SubID.SUBID.x))
+
+  dvdata4 <- dvdata33 %>%
     tidyr::fill(SubID.SUBID.x) %>%
     filter(!is.na(Duration)) %>%
     rename(ID = SubID.SUBID.x) %>%

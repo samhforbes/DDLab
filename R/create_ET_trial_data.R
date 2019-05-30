@@ -66,6 +66,7 @@ create_ET_trial_data <- function(data, task, write = F, show_all_missing = F){
     rename(ID = RECORDING_SESSION_LABEL,
            Trial = trial) %>%
     mutate(Trial = as.numeric(Trial)) %>%
+    mutate(Load = as.character(Load)) %>%
     arrange(ID, Trial)
 
   if(show_all_missing == T){

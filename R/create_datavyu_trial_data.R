@@ -108,9 +108,35 @@ create_datavyu_trial_data <- function(data, write = F){
     mutate(ID = stringr::str_remove(ID, '_')) %>%
     filter(!is.na(TLT))
 
+  dvdata5 <- dvdata33 %>%
+    tidyr::fill(SubID.SUBID.x) %>%
+    filter(!is.na(Duration)) %>%
+    rename(ID = SubID.SUBID.x) %>%
+    select(ID, Trial, ChangeSide, Load, Direction, Duration, Left, Right) %>%
+    group_by(ID, Trial, ChangeSide, Load) %>%
+    summarise(Left = sum(Left),
+              Right = sum(Right),
+              Looks = length(Direction),
+              TLT = sum(Left) + sum(Right)) %>%
+    mutate(PercLook = TLT/10000,
+           MLD = TLT/Looks,
+           CP = ifelse(ChangeSide == 'L', Left/TLT, Right/TLT),
+           Both = ifelse(Left > 0 & Right > 0, 'Y', 'N'),
+           ToCode = 'Coded') %>%
+    ungroup() %>%
+    mutate(ID = stringr::str_remove(ID, '_'))
+
+  dvdata6 <- anti_join(dvdata5, dvdata4, by = c('ID', 'Trial', 'ChangeSide', 'Load')) %>%
+    arrange(ID, Trial) %>%
+    filter(TLT == 0)
+
+  dvdata7 <- full_join(dvdata4, dvdata6) %>%
+    arrange(ID, Trial)
+
+
   if(write == T){
-    write_csv(dvdata4, paste('Coded_Data', '.csv', sep = ''))
+    write_csv(dvdata7, paste('Coded_Data', '.csv', sep = ''))
   }
 
-  return(dvdata4)
+  return(dvdata7)
 }

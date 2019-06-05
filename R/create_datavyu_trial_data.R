@@ -50,8 +50,8 @@ create_datavyu_trial_data <- function(data, write = F){
   }
 
   dvsubj <- dvdata %>%
-    select(SubID.SUBID, ID.subnumber, SubID.onset) %>%
-    rename(TrialLook.offset = SubID.onset) %>%
+    select(SubID.SUBID, ID.subnumber, SubID.onset, ID.offset) %>%
+    rename(TrialLook.onset = SubID.onset) %>%
     filter(!is.na(SubID.SUBID))
 
   dvdata2 <- dvdata %>%
@@ -67,6 +67,17 @@ create_datavyu_trial_data <- function(data, write = F){
            Left = ifelse(Direction == 'R', Duration, 0),
            Right = ifelse(Direction == 'L', Duration, 0))
 
+  adjacent <- dvdata2 %>%
+    group_by(ID.subnumber) %>%
+    mutate(adj = ifelse(lag(SubID.SUBID) != SubID.SUBID, 'adj', NA)) %>%
+    fill(adj, .direction = 'down') %>%
+    fill(adj, .direction = 'up') %>%
+    ungroup() %>%
+    filter(adj == 'adj')
+
+  nonadj <- anti_join(dvdata2, adjacent) %>%
+    fill(SubID.SUBID, .direction = 'down')
+
 
 
   #switched perspective
@@ -77,14 +88,20 @@ create_datavyu_trial_data <- function(data, write = F){
     }
   }
 
-  dvdata3 <- merge(dvsubj, dvdata2, by = c('ID.subnumber', 'TrialLook.offset'), all = T, sort = F)
+  dvdataadj3 <- right_join(dvsubj, adjacent, by = c('ID.subnumber' , 'TrialLook.onset'))
 
-  dvdata33 <- dvdata3 %>%
-    arrange(ID.subnumber, TrialLook.offset) #%>%
-    #mutate(SubID.SUBID.x = ifelse(is.na(SubID.SUBID.x), SubID.SUBID.y, SubID.SUBID.x))
+  dvdata33 <- dvdataadj3 %>%
+    arrange(ID.subnumber, TrialLook.onset) %>%
+    rename(SubID.SUBID = SubID.SUBID.x) %>%
+    fill(SubID.SUBID, .direction = 'down')
+
+  #non adjacent type (this is a pain) needs to merge by subID
+
+  dvdatanonadj3 <- right_join(dvsubj, nonadj, by = c('ID.subnumber', 'SubID.SUBID', 'TrialLook.onset'))
+  dvdata34 <- dvdatanonadj3 %>%
+    arrange(ID.subnumber, SubID.SUBID, TrialLook.onset)
 
   dvdata4 <- dvdata33 %>%
-    tidyr::fill(SubID.SUBID.x) %>%
     filter(!is.na(Duration)) %>%
     rename(ID = SubID.SUBID.x) %>%
     select(ID, Trial, ChangeSide, Load, Direction, Duration, Left, Right) %>%

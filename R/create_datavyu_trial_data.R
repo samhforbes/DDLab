@@ -14,7 +14,7 @@
 #'
 #' @export
 #'
-#' @return A formatted dataframe with CP, SwitchRate, MLD and TLT, as well as coding info.
+#' @return A formatted dataframe with CP, SwitchRate, MLD and TLT, as well as coding info
 
 create_datavyu_trial_data <- function(data, write = F){
 

@@ -101,9 +101,12 @@ create_datavyu_trial_data <- function(data, write = F){
   dvdata34 <- dvdatanonadj3 %>%
     arrange(ID.subnumber, SubID.SUBID, TrialLook.onset)
 
-  dvdata4 <- dvdata33 %>%
+  #join them
+  dvdata35 <- bind_rows(dvdata33, dvdata34)
+
+  dvdata4 <- dvdata35 %>%
     filter(!is.na(Duration)) %>%
-    rename(ID = SubID.SUBID.x) %>%
+    rename(ID = SubID.SUBID) %>%
     select(ID, Trial, ChangeSide, Load, Direction, Duration, Left, Right) %>%
     filter(Direction == 'L' | Direction == 'R') %>%
     group_by(ID, Trial, ChangeSide, Load) %>%
@@ -125,10 +128,11 @@ create_datavyu_trial_data <- function(data, write = F){
     mutate(ID = stringr::str_remove(ID, '_')) %>%
     filter(!is.na(TLT))
 
-  dvdata5 <- dvdata33 %>%
-    tidyr::fill(SubID.SUBID.x) %>%
+  # allow for no switch data
+  dvdata5 <- dvdata35 %>%
+    tidyr::fill(SubID.SUBID) %>%
     filter(!is.na(Duration)) %>%
-    rename(ID = SubID.SUBID.x) %>%
+    rename(ID = SubID.SUBID) %>%
     select(ID, Trial, ChangeSide, Load, Direction, Duration, Left, Right) %>%
     group_by(ID, Trial, ChangeSide, Load) %>%
     summarise(Left = sum(Left),
@@ -143,6 +147,7 @@ create_datavyu_trial_data <- function(data, write = F){
     ungroup() %>%
     mutate(ID = stringr::str_remove(ID, '_'))
 
+  #take only what's missing
   dvdata6 <- anti_join(dvdata5, dvdata4, by = c('ID', 'Trial', 'ChangeSide', 'Load')) %>%
     arrange(ID, Trial) %>%
     filter(TLT == 0)

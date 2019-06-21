@@ -49,6 +49,11 @@ create_datavyu_trial_data <- function(data, write = F){
              TrialLook.trials_trialnum = TrialLook.trials_trial)
   }
 
+  if('ID.id' %in% names(data)){
+    dvdata <- dvdata %>%
+      mutate(SubID.SUBID = ifelse(is.na(SubID.SUBID), ID.id, SubID.SUBID))
+  }
+
   dvsubj <- dvdata %>%
     select(SubID.SUBID, ID.subnumber, SubID.onset, ID.offset) %>%
     rename(TrialLook.onset = SubID.onset) %>%

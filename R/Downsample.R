@@ -22,7 +22,7 @@ downsample <- function(data, time_bin_size, sample_rate = 2){
   if(is.null(time_bin_size)){
     stop('Please supply a time bin size!')
   }
-  data <- read.table(data, sep = '\t', header = T)
+  #data <- read.table(data, sep = '\t', header = T)
 
   samples_per_bin <- (sample_rate/1000) * time_bin_size
 

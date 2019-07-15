@@ -49,7 +49,7 @@ create_ET_trial_data <- function(data, task, write = F, show_all_missing = F){
            SR = Switch/(TLT/1000),
            CP = ifelse(ChangeSide == 'L', Left/TLT, Right/TLT),
            Both = ifelse(Left > 0 & Right > 0, 'Y', 'N'),
-           ToCode = ifelse(Both == 'N' | PercLook < .4, 'Y', 'N')) %>%
+           ToCode = ifelse(Both == 'N', 'Y', 'N')) %>%
     ungroup()
 
   All <- ETd %>%

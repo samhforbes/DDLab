@@ -23,7 +23,7 @@ create_ET_trial_data <- function(data, task, write = F, show_all_missing = F){
   ETd <- data
 
   if('CURRENT_FIX_INTEREST_AREA_LABEL' %in% names(ETd)){
-    next
+    ETd <- ETd
   }else{
     ETd <- ETd %>%
       mutate(CURRENT_FIX_INTEREST_AREA_LABEL = CURRENT_FIX_NEAREST_INTEREST_AREA_LABEL)

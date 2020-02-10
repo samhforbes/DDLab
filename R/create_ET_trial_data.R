@@ -22,6 +22,13 @@ create_ET_trial_data <- function(data, task, write = F, show_all_missing = F){
 
   ETd <- data
 
+  if('CURRENT_FIX_INTEREST_AREA_LABEL' %in% names(ETd)){
+    next
+  }else{
+    ETd <- ETd %>%
+      mutate(CURRENT_FIX_INTEREST_AREA_LABEL = CURRENT_FIX_NEAREST_INTEREST_AREA_LABEL)
+  }
+
   ETdata2 <- ETd %>%
     filter(task == task,
            CURRENT_FIX_INTEREST_AREA_LABEL != '.' & !is.nan(CURRENT_FIX_INTEREST_AREA_LABEL) & CURRENT_FIX_INTEREST_AREA_LABEL != 'NaN') %>%

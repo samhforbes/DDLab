@@ -197,12 +197,12 @@ create_datavyu_trial_data2 <- function(data, write = F){
   if('TrialLook.looking_direction' %in% names(data)){
     dvdata <- data %>%
       mutate(direction = TrialLook.looking_direction)
-  }else{if('TrialLook.looking_code01' %in% names(data)){
+  }else{if('Looking.DIRECTION' %in% names(data)){
     dvdata <- data %>%
-      mutate(direction = TrialLook.looking_code01)
+      mutate(direction = Looking.DIRECTION)
   }else{
     dvdata <- data %>%
-      mutate(direction = Looking.direction)
+      mutate(direction = TrialLook.looking_code01)
   }
   }
 
@@ -219,6 +219,12 @@ create_datavyu_trial_data2 <- function(data, write = F){
     dvdata <- dvdata %>%
       mutate(SubID.SUBID = ifelse(is.na(SubID.SUBID), ID.id, SubID.SUBID))
   }
+  if(!('ID.subnumber' %in% names(data))){
+    dvdata <- dvdata %>%
+      mutate(ID.subnumber = paste(substr(SubID.SUBID, 1, 2), 'NIHVWM', substr(SubID.SUBID, 3, 6), sep = ''),
+             ID.offset = SubID.offset,
+             ID.subnumber = ifelse(substr(ID.subnumber, 1, 2) == 'NA', NA, ID.subnumber))
+  }
 
   dvsubj <- dvdata %>%
     select(SubID.SUBID, ID.subnumber, SubID.onset, ID.offset) %>%
@@ -227,7 +233,7 @@ create_datavyu_trial_data2 <- function(data, write = F){
 
   dvdata2 <- dvdata %>%
     #fill(ID.subnumber) %>%
-    mutate(Trial = Trials.ordinal,
+    mutate(Trial = TrialLook.trials_trialnum,
            Load = TrialLook.trials_ss,
            ChangeSide = TrialLook.trials_changeside) %>%
     filter(!is.na(Trial)) %>%
@@ -247,7 +253,7 @@ create_datavyu_trial_data2 <- function(data, write = F){
     filter(adj == 'adj')
 
   nonadj <- anti_join(dvdata2, adjacent) %>%
-    fill(SubID.SUBID, .direction = 'down')
+    fill(SubID.SUBID, ID.subnumber, .direction = 'down')
 
 
 
@@ -277,14 +283,16 @@ create_datavyu_trial_data2 <- function(data, write = F){
     arrange(ID.subnumber, SubID.SUBID, TrialLook.onset)
 
   #join them
-  dvdata35 <- bind_rows(dvdata33, dvdata34)
+  dvdata35 <- bind_rows(dvdata33, dvdata34) %>%
+    mutate(Run = substr(SubID.SUBID, 7, 12))
 
   dvdata4 <- dvdata35 %>%
     filter(!is.na(Duration)) %>%
+    mutate(Run = substr(SubID.SUBID, 7, 12)) %>%
     rename(ID = ID.subnumber) %>%
-    select(ID, Year, Trial, ChangeSide, Load, Direction, Duration, Left, Right) %>%
+    select(ID, Run, Trial, ChangeSide, Load, Direction, Duration, Left, Right) %>%
     filter(Direction == 'L' | Direction == 'R') %>%
-    group_by(ID, Year, Trial, ChangeSide, Load) %>%
+    group_by(ID, Run, Trial, ChangeSide, Load) %>%
     mutate(Switch = 0) %>%
     mutate(Switch = ifelse(lag(Direction) != Direction, 1, 0)) %>%
     mutate(Switch = ifelse(is.na(Switch), 0, Switch)) %>%
@@ -308,8 +316,8 @@ create_datavyu_trial_data2 <- function(data, write = F){
     tidyr::fill(SubID.SUBID) %>%
     filter(!is.na(Duration)) %>%
     rename(ID = SubID.SUBID) %>%
-    select(ID, Year, Trial, ChangeSide, Load, Direction, Duration, Left, Right) %>%
-    group_by(ID, Year, Trial, ChangeSide, Load) %>%
+    select(ID, Run, Trial, ChangeSide, Load, Direction, Duration, Left, Right) %>%
+    group_by(ID, Run, Trial, ChangeSide, Load) %>%
     summarise(Left = sum(Left),
               Right = sum(Right),
               Looks = length(Direction),
@@ -323,12 +331,12 @@ create_datavyu_trial_data2 <- function(data, write = F){
     mutate(ID = stringr::str_remove(ID, '_'))
 
   #take only what's missing
-  dvdata6 <- anti_join(dvdata5, dvdata4, by = c('ID', 'Trial', 'ChangeSide', 'Load')) %>%
-    arrange(ID, Trial) %>%
+  dvdata6 <- anti_join(dvdata5, dvdata4, by = c('ID', 'Run', 'Trial', 'ChangeSide', 'Load')) %>%
+    arrange(ID, Run, Trial) %>%
     filter(TLT == 0)
 
   dvdata7 <- full_join(dvdata4, dvdata6) %>%
-    arrange(ID, Trial)
+    arrange(ID, Run, Trial)
 
 
   if(write == T){

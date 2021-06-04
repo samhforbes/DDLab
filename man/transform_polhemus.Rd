@@ -4,8 +4,12 @@
 \alias{transform_polhemus}
 \title{transform polhemus data into digpoints for AtlasViewerGUI}
 \usage{
-transform_polhemus(filename, wd, option = c("NIH", "Gates", "HWB"),
-  out_folder = "DigTest")
+transform_polhemus(
+  filename,
+  wd,
+  option = c("NIH", "Gates", "HWB"),
+  out_folder = "DigTest"
+)
 }
 \arguments{
 \item{filename}{A string denoting name of the file}

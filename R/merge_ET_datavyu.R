@@ -24,7 +24,7 @@ merge_ET_datavyu <- function(ETdata, datavyudata, write = FALSE){
   ET <- ETdata
   DV <- datavyudata
 
-  all <- full_join(DV, ET)
+  all <- bind_rows(DV, ET)
 
   all2 <- all %>%
     arrange(ID, Trial) %>%

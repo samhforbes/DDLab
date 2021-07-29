@@ -31,12 +31,14 @@ create_ET_trial_data <- function(data, task, write = F, show_all_missing = F){
   }
 
   ETdata2 <- ETd %>%
+    group_by(RECORDING_SESSION_LABEL, trial) %>%
     filter(task == task,
            CURRENT_FIX_INTEREST_AREA_LABEL != '.' & !is.nan(CURRENT_FIX_INTEREST_AREA_LABEL) & CURRENT_FIX_INTEREST_AREA_LABEL != 'NaN') %>%
     mutate(CURRENT_FIX_INTEREST_AREA_LABEL = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == 'LEFT_IA', 'LEFT_BIA', CURRENT_FIX_INTEREST_AREA_LABEL),
            CURRENT_FIX_INTEREST_AREA_LABEL = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == 'RIGHT_IA', 'RIGHT_BIA', CURRENT_FIX_INTEREST_AREA_LABEL)) %>%
     mutate(LEFT = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == 'LEFT_BIA', CURRENT_FIX_DURATION, 0),
            RIGHT = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL == 'RIGHT_BIA', CURRENT_FIX_DURATION, 0)) %>%
+    ungroup() %>%
     group_by(RECORDING_SESSION_LABEL, trial) %>%
     mutate(LOOKS = ifelse(CURRENT_FIX_RUN_INDEX ==1 | CURRENT_FIX_RUN_INDEX <= lag(CURRENT_FIX_RUN_INDEX), 1, 0),
            LOOKS = ifelse(is.na(LOOKS), 1, LOOKS)) %>%

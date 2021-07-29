@@ -24,7 +24,12 @@ merge_ET_datavyu <- function(ETdata, datavyudata, write = FALSE){
   ET <- ETdata
   DV <- datavyudata
 
-  all <- bind_rows(DV, ET)
+  names <- unique(ET$ID)
+
+  DV2 <- DV %>%
+    filter(ID %in% names)
+
+  all <- bind_rows(DV2, ET)
 
   all2 <- all %>%
     arrange(ID, Trial) %>%

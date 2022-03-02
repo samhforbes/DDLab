@@ -2,6 +2,7 @@ Package: DDLab
 Type: Package
 Title: An R package for solving common DDLab problems
 Version: 0.0.0.99
+Date: 2021-09-01
 Authors@R: person("Samuel", "Forbes", email = "samuel.h.forbes@gmail.com", role = c("aut", "cre"))
 Description: An R package for use within the DDLab - the current iteration is only looking at Eyetracking stuff
 License: MIT

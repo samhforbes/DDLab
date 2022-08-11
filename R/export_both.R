@@ -58,7 +58,7 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
 
   if(!'DISPLAY_FLASH' %in% unique(et_data2$sample_message)){
     et_data2 <- et_data2 %>%
-      mutate(sample_message = ifelse(sample_message == 'Video Component', 'DISPLAY_FLASH', sample_message))
+      mutate(sample_message = ifelse(sample_message == starts_with('Video Component'), 'DISPLAY_FLASH', sample_message))
   }
 
   video_data2 <- video_data %>%

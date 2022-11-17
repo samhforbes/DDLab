@@ -172,7 +172,7 @@ create_ET_trial_data2 <- function(data, write = F, show_all_missing = F){
     #        Trial = trial) %>%
     mutate(Trial = as.numeric(Trial)) %>%
     mutate(Load = as.character(Load)) %>%
-    arrange(ID, Trial)
+    arrange(Run, Trial)
 
   # if(show_all_missing == T){
   #   ID <- rep(unique(data_out$ID), each = 18)

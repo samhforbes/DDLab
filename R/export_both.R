@@ -88,8 +88,8 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
     fill(in_trial) %>%
     filter(!is.na(in_trial)) %>%
     mutate(start_time = first(timestamp),
-           timestamp2 = timestamp - start_time) %>%
-    filter(timestamp2 >= 0) %>%
+           timestamp_new = timestamp - start_time) %>%
+    filter(timestamp_new >= 0) %>%
     ungroup()
 
 
@@ -102,9 +102,9 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
     fill(in_trial) %>%
     filter(!is.na(in_trial)) %>%
     mutate(start_time = first(timestamp),
-           timestamp2 = timestamp - start_time) %>%
-    filter(timestamp2 >= 0) %>%
-    summarise(max = max(timestamp2))
+           timestamp_new = timestamp - start_time) %>%
+    filter(timestamp_new >= 0) %>%
+    summarise(max = max(timestamp_new))
 
 
   t1 <- filter(check, trial == 1)
@@ -117,7 +117,7 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
   f <- combined %>%
     filter(trial_trial != trial) %>%
     group_by (trial, trial_trial) %>%
-    summarise(time = first(timestamp2)) %>%
+    summarise(time = first(timestamp_new)) %>%
     ungroup()
 
   clean <- combined %>%
@@ -147,12 +147,12 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
                timebin) %>%
       summarise(et_look = getmode(et_look),
                 video_look = getmode(video_look),
-                timestamp2 = first(timestamp2),
+                timestamp_new = first(timestamp_new),
                 timestamp = first(timestamp)) %>%
       ungroup() %>%
       mutate(timestamp3 = timebin * hertz)
   }else{
-    clean3$timestamp3 <- clean3$timestamp2
+    clean3$timestamp3 <- clean3$timestamp_new
   }
 
   et_out <- clean3 %>%
@@ -161,8 +161,7 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
            trackloss = ifelse(is.na(et_look), 1, 0)) %>%
     rename(utrial = trial_trial,
            ID = recording_session_label) %>%
-    select(ID, utrial, timestamp2, condition, side, target, distractor, trackloss) %>%
-    rename(timestamp = timestamp2) %>%
+    select(ID, utrial, timestamp, timestamp_new, condition, side, target, distractor, trackloss) %>%
     mutate(video_condition = 'eyetracked',
            trial = paste(utrial, video_condition, sep = '_'))
 
@@ -172,8 +171,7 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
            trackloss = ifelse(is.na(video_look), 1, 0)) %>%
     rename(utrial = trial_trial,
            ID = recording_session_label) %>%
-    select(ID, utrial, timestamp2, condition, side, target, distractor, trackloss) %>%
-    rename(timestamp = timestamp2) %>%
+    select(ID, utrial, timestamp, timestamp_new, condition, side, target, distractor, trackloss) %>%
     mutate(video_condition = 'video',
            trial = paste(utrial, video_condition, sep = '_'))
 

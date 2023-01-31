@@ -64,7 +64,12 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
   }
 
   video_data2 <- video_data %>%
-    janitor::clean_names()
+    janitor::clean_names() %>%
+    mutate(diff = time - lag(time),
+           timestamp2 = ifelse(is.na(diff), timestamp, diff),
+           timestamp2 = cumsum(timestamp2)) %>%
+    rename(timestamp_old = timestamp,
+           timestamp = timestamp2)
 
   getmode <- function(v) {
     uniqv <- unique(v)
@@ -77,12 +82,18 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
   check <- full_join(video_data2, et_data2, by = 'timestamp') %>%
     arrange(timestamp)
 
+  # check2 <- check %>%
+  #   filter(!is.na(time)) %>%
+  #   filter(!is.na(recording_session_label))
+  #
+  # check3 <- inner_join(video_data2, et_data2, by = 'timestamp')
+
   unique(et_data2$sample_message)
 
   combined <- check %>%
     mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
     fill(all_of(namey), .direction = 'down') %>%
-    fill(track_name) %>%
+    fill(track_name) %>% # bad bad bad
     group_by(trial_trial) %>%
     mutate(in_trial = ifelse(sample_message == 'DISPLAY_FLASH', 1, NA)) %>%
     fill(in_trial) %>%
@@ -92,19 +103,22 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
     filter(timestamp_new >= 0) %>%
     ungroup()
 
-
-  k <- check %>%
-    mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
-    fill(all_of(namey), .direction = 'down') %>%
-    fill(track_name) %>%
-    group_by(trial_label) %>%
-    mutate(in_trial = ifelse(sample_message == 'DISPLAY_FLASH', 1, NA)) %>%
-    fill(in_trial) %>%
-    filter(!is.na(in_trial)) %>%
-    mutate(start_time = first(timestamp),
-           timestamp_new = timestamp - start_time) %>%
-    filter(timestamp_new >= 0) %>%
-    summarise(max = max(timestamp_new))
+  l <- table(combined$track_name, useNA = 'always')
+  if(length(l == 1)){
+    warning('Only one direction detected in video data, this indicates a sync error')
+  }
+  # k <- check %>%
+  #   mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
+  #   fill(all_of(namey), .direction = 'down') %>%
+  #   fill(track_name) %>%
+  #   group_by(trial_label) %>%
+  #   mutate(in_trial = ifelse(sample_message == 'DISPLAY_FLASH', 1, NA)) %>%
+  #   fill(in_trial) %>%
+  #   filter(!is.na(in_trial)) %>%
+  #   mutate(start_time = first(timestamp),
+  #          timestamp_new = timestamp - start_time) %>%
+  #   filter(timestamp_new >= 0) %>%
+  #   summarise(max = max(timestamp_new))
 
 
   t1 <- filter(check, trial == 1)
@@ -178,3 +192,13 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
   all <- bind_rows(et_out, video_out)
   return(all)
 }
+
+# all2 <- all %>%
+#   select(-trial) %>%
+#   pivot_wider(names_from = 'video_condition', values_from = c(target, distractor, trackloss))
+#
+# all3 <- all2
+# all3[is.na(all3)] <- 0
+#
+# with(all3, chisq.test(target_video, target_eyetracked))
+# with(all3, chisq.test(distractor_video, distractor_eyetracked))

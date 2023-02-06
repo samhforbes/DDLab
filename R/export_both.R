@@ -63,6 +63,12 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
                                      'DISPLAY_FLASH', sample_message))
   }
 
+  a <- first(which(video_data$Timestamp > 0))
+
+  if(a != 1){
+    video_data <- video_data[a:nrow(video_data),]
+  }
+
   video_data2 <- video_data %>%
     janitor::clean_names() %>%
     mutate(diff = time - lag(time),
@@ -104,9 +110,11 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
     ungroup()
 
   l <- table(combined$track_name, useNA = 'always')
-  if(length(l == 1)){
+
+  if(length(l) == 1){
     warning('Only one direction detected in video data, this indicates a sync error')
   }
+
   # k <- check %>%
   #   mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
   #   fill(all_of(namey), .direction = 'down') %>%

@@ -37,6 +37,7 @@ read_et_data <- function(filepath, sep = '\t'){
 #' @param et_data a rectangular data for eyetracking from read_et_data
 #' @param video_data a rectangular data from read_video_data
 #' @param hertz the capture rate of the video in hertz defaults to 100
+#' @param .return_full_data return unfiltered frame for debugging and recoding.
 #'
 #' @examples
 #'  \dontrun{
@@ -47,7 +48,7 @@ read_et_data <- function(filepath, sep = '\t'){
 #'
 
 
-export_two_modularities <- function(et_data, video_data, hertz = 100){
+export_two_modularities <- function(et_data, video_data, hertz = 100, .return_full_data = F){
 
   et_data2 <- et_data %>%
     janitor::clean_names()
@@ -95,6 +96,35 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
   # check3 <- inner_join(video_data2, et_data2, by = 'timestamp')
 
   unique(et_data2$sample_message)
+
+  if(.return_full_data == T){
+    combined_all <- check %>%
+      mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
+      fill(all_of(namey), .direction = 'down') %>%
+      fill(track_name) %>% # bad bad bad
+      group_by(trial_trial) %>%
+      mutate(in_trial = ifelse(sample_message == 'DISPLAY_FLASH', 1, NA)) %>%
+      fill(in_trial) %>%
+      mutate(start_time = first(timestamp),
+             timestamp_new = timestamp - start_time) %>%
+      ungroup()
+
+    clean_all <- combined_all %>%
+      mutate(et_look = case_when(average_interest_area_label == 'LEFT_BIA' | left_interest_area_label == 'LEFT_BIA' | right_interest_area_label == 'LEFT_BIA' ~ 'L',
+                                 average_interest_area_label == 'RIGHT_BIA' | left_interest_area_label == 'RIGHT_BIA' | right_interest_area_label == 'RIGHT_BIA' ~ 'R',
+                                 TRUE ~ NA_character_))
+
+    clean2_all <- clean_all %>%
+      mutate(video_look = case_when(track_name == 'left' ~ 'R', #do the switch here instead of further down for this case.
+                                    track_name == 'right' ~ 'L',
+                                    track_name == 'away' ~ NA_character_,
+                                    TRUE ~ NA_character_)) %>%
+      mutate(video_in_frame = ifelse(is.na(trial_trial), 1, NA)) %>%
+      fill(et_look)
+
+    all = clean2_all
+
+  }else{
 
   combined <- check %>%
     mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
@@ -198,6 +228,7 @@ export_two_modularities <- function(et_data, video_data, hertz = 100){
            trial = paste(utrial, video_condition, sep = '_'))
 
   all <- bind_rows(et_out, video_out)
+  }
   return(all)
 }
 

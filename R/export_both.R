@@ -119,7 +119,7 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, .return_fu
                                     track_name == 'right' ~ 'L',
                                     track_name == 'away' ~ 'A',
                                     TRUE ~ NA_character_)) %>%
-      mutate(video_in_frame = ifelse(is.na(trial_trial), 1, NA)) %>%
+      mutate(video_in_frame = ifelse(!is.na(time), 1, NA)) %>%
       fill(et_look)
 
     all = clean2_all

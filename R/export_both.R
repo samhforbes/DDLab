@@ -131,6 +131,15 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, .return_fu
 
     all = clean2_all
 
+    # message('raw left eye eyetracking directions are: \n',
+    #     table(et_data2$left_interest_area_label, useNA = 'always'),
+    #     'raw right eye eyetracking directions are: \n',
+    #     table(et_data2$right_interest_area_label, useNA = 'always'),
+    #     'output ET directions are: \n',
+    #   table(all$et_look, useNA = 'always'))
+
+
+
   }else{
 
   combined <- check %>%

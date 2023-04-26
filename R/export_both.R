@@ -56,6 +56,9 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, .return_fu
   namey <- names(et_data2)
   namey <- namey[namey != 'timestamp']
   namey <- namey[namey != 'sample_message']
+  namey <- namey[namey != "average_interest_area_label"]
+  namey <- namey[namey != "left_interest_area_label"]
+  namey <- namey[namey != "right_interest_area_label"]
 
   if(!'DISPLAY_FLASH' %in% unique(et_data2$sample_message)){
     et_data2 <- et_data2 %>%
@@ -100,13 +103,17 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, .return_fu
   if(.return_full_data == T){
     combined_all <- check %>%
       mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
+      fill(trial_trial) %>%
       fill(all_of(namey), .direction = 'down') %>%
       fill(track_name) %>% # bad bad bad
       group_by(trial_trial) %>%
       mutate(in_trial = ifelse(sample_message == 'DISPLAY_FLASH', 1, NA)) %>%
       fill(in_trial) %>%
       mutate(start_time = first(timestamp),
-             timestamp_new = timestamp - start_time) %>%
+             timestamp_new = timestamp - start_time) %>% #fill blank from merge below
+      mutate(left_interest_area_label = ifelse(!is.na(time) & !is.na(in_trial), lag(left_interest_area_label), left_interest_area_label),
+             right_interest_area_label = ifelse(!is.na(time) & !is.na(in_trial), lag(right_interest_area_label), right_interest_area_label),
+             average_interest_area_label = ifelse(!is.na(time) & !is.na(in_trial), lag(average_interest_area_label), average_interest_area_label)) %>%
       ungroup()
 
     clean_all <- combined_all %>%
@@ -119,8 +126,8 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, .return_fu
                                     track_name == 'right' ~ 'L',
                                     track_name == 'away' ~ 'A',
                                     TRUE ~ NA_character_)) %>%
-      mutate(video_in_frame = ifelse(!is.na(time), 1, NA)) %>%
-      fill(et_look)
+      mutate(video_in_frame = ifelse(!is.na(time), 1, NA)) #%>%
+      # fill(et_look)
 
     all = clean2_all
 

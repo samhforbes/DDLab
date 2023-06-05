@@ -100,16 +100,18 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, .return_fu
 
   unique(et_data2$sample_message)
 
-  if(.return_full_data == T){
+
     combined_all <- check %>%
       mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
       fill(trial_trial) %>%
       fill(all_of(namey), .direction = 'down') %>%
       fill(track_name) %>% # bad bad bad
       group_by(trial_trial) %>%
-      mutate(in_trial = ifelse(sample_message == 'DISPLAY_FLASH', 1, NA)) %>%
-      fill(in_trial) %>%
-      mutate(start_time = first(timestamp),
+      mutate(in_trial = ifelse(sample_message == 'DISPLAY_FLASH', 1, NA),
+             in_trial = ifelse(sample_message == "Trial ended by timeout", 0, in_trial)) %>%
+      fill(in_trial) %>% #add end buffer
+      mutate(intrial = ifelse(in_trial == 0, NA, in_trial),
+             start_time = first(timestamp),
              timestamp_new = timestamp - start_time) %>% #fill blank from merge below
       mutate(left_interest_area_label = ifelse(!is.na(time) & !is.na(in_trial), lag(left_interest_area_label), left_interest_area_label),
              right_interest_area_label = ifelse(!is.na(time) & !is.na(in_trial), lag(right_interest_area_label), right_interest_area_label),
@@ -129,7 +131,9 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, .return_fu
       mutate(video_in_frame = ifelse(!is.na(time), 1, NA)) #%>%
       # fill(et_look)
 
-    all = clean2_all
+    #this is Jake export
+
+    # all = clean2_all
 
     # message('raw left eye eyetracking directions are: \n',
     #     table(et_data2$left_interest_area_label, useNA = 'always'),
@@ -138,114 +142,182 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, .return_fu
     #     'output ET directions are: \n',
     #   table(all$et_look, useNA = 'always'))
 
+    clean3 <- clean2_all %>%
+      filter(in_trial == 1) %>%
+      group_by(trial, trial_trial) %>%
+      mutate(diff2 = timestamp - lag(timestamp),
+      timebin = floor(timestamp_new / hertz)) %>%
+      ungroup()
 
+    clean4 <- clean3 %>%
+      group_by(trial, trial_trial, condition, side,
+               timebin) %>%
+      summarise(recording_session_label = first(recording_session_label),
+                et_look = getmode(et_look),
+                video_look = getmode(video_look),
+                timestamp_new = first(timestamp_new),
+                timestamp = first(timestamp)) %>%
+      ungroup() %>%
+      mutate(timestamp3 = timebin * hertz) %>%
+      select(recording_session_label, everything())
 
+    et_out <- clean4 %>%
+      mutate(target = ifelse(et_look == side, 1, 0),
+             distractor = ifelse(et_look != side, 1, 0),
+             trackloss = ifelse(is.na(et_look), 1, 0)) %>%
+      rename(utrial = trial,
+             ID = recording_session_label,
+             direction = et_look) %>%
+      select(ID, utrial, timestamp, timestamp_new, direction, condition, side, target, distractor, trackloss) %>%
+      mutate(video_condition = 'eyetracked',
+             trial = paste(utrial, video_condition, sep = '_'))
+
+    video_out <- clean4 %>%
+      mutate(video_look = ifelse(video_look == 'A', NA, video_look),
+             target = ifelse(video_look == side, 1, 0), #don't switch side (above)
+             distractor = ifelse(video_look != side, 1, 0),
+             trackloss = ifelse(is.na(video_look), 1, 0)) %>%
+      rename(utrial = trial,
+             ID = recording_session_label,
+             direction = video_look) %>%
+      select(ID, utrial, timestamp, timestamp_new, direction, condition, side, target, distractor, trackloss) %>%
+      mutate(video_condition = 'video',
+             trial = paste(utrial, video_condition, sep = '_'))
+
+    all <- bind_rows(et_out, video_out)
+    #that is final for analysis
+
+    #check ratios of left look
+    inT <- clean2_all %>%
+      filter(in_trial == 1) %>%
+      mutate(video_look = ifelse(video_look == 'A', NA, video_look))
+
+    tab_rat = table(inT$et_look, useNA = 'always')
+    inT_ratio = tab_rat[[1]]/nrow(inT)
+
+    clean_rat = table(et_out$direction, useNA = 'always')
+    clean_ratio = clean_rat[[1]]/nrow(et_out)
+
+    message('Eyetracking \n _________________________ \n Ratio of left looks in full data =', round(inT_ratio, 4), '\n Ratio of left looks in downsampled data =', round(clean_ratio, 4), '\n
+            If this looks wrong contact me!')
+
+    vid_rat = table(inT$video_look, useNA = 'always')
+    vid_ratio = vid_rat[[1]]/nrow(inT)
+
+    out_rat = table(video_out$direction, useNA = 'always')
+    out_ratio = out_rat[[1]]/nrow(video_out)
+
+    message('Video \n _________________________ \n Ratio of left looks in full data =', round(vid_ratio, 4), '\n Ratio of left looks in downsampled data =', round(out_ratio, 4), '\n
+            If this looks wrong contact me!')
+
+    if(.return_full_data == T){
+    return(clean2_all)
   }else{
+    return(all)
 
-  combined <- check %>%
-    mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
-    fill(all_of(namey), .direction = 'down') %>%
-    fill(track_name) %>% # bad bad bad
-    group_by(trial_trial) %>%
-    mutate(in_trial = ifelse(sample_message == 'DISPLAY_FLASH', 1, NA)) %>%
-    fill(in_trial) %>%
-    filter(!is.na(in_trial)) %>%
-    mutate(start_time = first(timestamp),
-           timestamp_new = timestamp - start_time) %>%
-    filter(timestamp_new >= 0) %>%
-    ungroup()
-
-  l <- table(combined$track_name, useNA = 'always')
-
-  if(length(l) == 1){
-    warning('Only one direction detected in video data, this indicates a sync error')
-  }
-
-  # k <- check %>%
+  # combined <- check %>%
   #   mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
   #   fill(all_of(namey), .direction = 'down') %>%
-  #   fill(track_name) %>%
-  #   group_by(trial_label) %>%
+  #   fill(track_name) %>% # bad bad bad
+  #   group_by(trial_trial) %>%
   #   mutate(in_trial = ifelse(sample_message == 'DISPLAY_FLASH', 1, NA)) %>%
   #   fill(in_trial) %>%
   #   filter(!is.na(in_trial)) %>%
   #   mutate(start_time = first(timestamp),
   #          timestamp_new = timestamp - start_time) %>%
   #   filter(timestamp_new >= 0) %>%
-  #   summarise(max = max(timestamp_new))
-
-
-  t1 <- filter(check, trial == 1)
-  a <- t1 %>%
-    filter(!is.na(sample_message)) %>%
-    select(sample_message, sample_index)
-
-  s <- combined %>%  filter(trial_label == 'Trial: 1')
-
-  f <- combined %>%
-    filter(trial_trial != trial) %>%
-    group_by (trial, trial_trial) %>%
-    summarise(time = first(timestamp_new)) %>%
-    ungroup()
-
-  clean <- combined %>%
-    mutate(et_look = case_when(average_interest_area_label == 'LEFT_BIA' | left_interest_area_label == 'LEFT_BIA' | right_interest_area_label == 'LEFT_BIA' ~ 'L',
-                               average_interest_area_label == 'RIGHT_BIA' | left_interest_area_label == 'RIGHT_BIA' | right_interest_area_label == 'RIGHT_BIA' ~ 'R',
-                               TRUE ~ NA_character_))
-
-  clean2 <- clean %>%
-    mutate(video_look = case_when(track_name == 'left' ~ 'L',
-                                  track_name == 'right' ~ 'R',
-                                  track_name == 'away' ~ NA_character_,
-                                  TRUE ~ NA_character_))
-
-  # downsample
-  clean3 <- clean2
-
-  if(hertz != samplerate){
-    clean3 <- clean3 %>%
-      group_by(recording_session_label, trial_trial) %>%
-      mutate(sample_index2 = sample_index - first(sample_index)) %>%
-      ungroup()
-
-    clean3$timebin <- floor(clean3[["sample_index2"]] *samplerate / hertz)
-
-    clean3 <- clean3 %>%
-      group_by(recording_session_label, trial, trial_trial, condition, side,
-               timebin) %>%
-      summarise(et_look = getmode(et_look),
-                video_look = getmode(video_look),
-                timestamp_new = first(timestamp_new),
-                timestamp = first(timestamp)) %>%
-      ungroup() %>%
-      mutate(timestamp3 = timebin * hertz)
-  }else{
-    clean3$timestamp3 <- clean3$timestamp_new
+  #   ungroup()
+  #
+  # l <- table(combined$track_name, useNA = 'always')
+  #
+  # if(length(l) == 1){
+  #   warning('Only one direction detected in video data, this indicates a sync error')
+  # }
+  #
+  # # k <- check %>%
+  # #   mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
+  # #   fill(all_of(namey), .direction = 'down') %>%
+  # #   fill(track_name) %>%
+  # #   group_by(trial_label) %>%
+  # #   mutate(in_trial = ifelse(sample_message == 'DISPLAY_FLASH', 1, NA)) %>%
+  # #   fill(in_trial) %>%
+  # #   filter(!is.na(in_trial)) %>%
+  # #   mutate(start_time = first(timestamp),
+  # #          timestamp_new = timestamp - start_time) %>%
+  # #   filter(timestamp_new >= 0) %>%
+  # #   summarise(max = max(timestamp_new))
+  #
+  #
+  # t1 <- filter(check, trial == 1)
+  # a <- t1 %>%
+  #   filter(!is.na(sample_message)) %>%
+  #   select(sample_message, sample_index)
+  #
+  # s <- combined %>%  filter(trial_label == 'Trial: 1')
+  #
+  # f <- combined %>%
+  #   filter(trial_trial != trial) %>%
+  #   group_by (trial, trial_trial) %>%
+  #   summarise(time = first(timestamp_new)) %>%
+  #   ungroup()
+  #
+  # cleana <- combined %>%
+  #   mutate(et_look = case_when(average_interest_area_label == 'LEFT_BIA' | left_interest_area_label == 'LEFT_BIA' | right_interest_area_label == 'LEFT_BIA' ~ 'L',
+  #                              average_interest_area_label == 'RIGHT_BIA' | left_interest_area_label == 'RIGHT_BIA' | right_interest_area_label == 'RIGHT_BIA' ~ 'R',
+  #                              TRUE ~ NA_character_))
+  #
+  # clean2 <- cleana %>%
+  #   mutate(video_look = case_when(track_name == 'left' ~ 'L',
+  #                                 track_name == 'right' ~ 'R',
+  #                                 track_name == 'away' ~ NA_character_,
+  #                                 TRUE ~ NA_character_))
+  #
+  # # downsample
+  # clean3 <- clean2
+  #
+  # if(hertz != samplerate){
+  #   clean3 <- clean3 %>%
+  #     group_by(recording_session_label, trial_trial) %>%
+  #     mutate(sample_index2 = sample_index - first(sample_index)) %>%
+  #     ungroup()
+  #
+  #   clean3$timebin <- floor(clean3[["sample_index2"]] *samplerate / hertz)
+  #
+  #   clean3 <- clean3 %>%
+  #     group_by(recording_session_label, trial, trial_trial, condition, side,
+  #              timebin) %>%
+  #     summarise(et_look = getmode(et_look),
+  #               video_look = getmode(video_look),
+  #               timestamp_new = first(timestamp_new),
+  #               timestamp = first(timestamp)) %>%
+  #     ungroup() %>%
+  #     mutate(timestamp3 = timebin * hertz)
+  # }else{
+  #   clean3$timestamp3 <- clean3$timestamp_new
+  # }
+  #
+  # et_out <- clean3 %>%
+  #   mutate(target = ifelse(et_look == side, 1, 0),
+  #          distractor = ifelse(et_look != side, 1, 0),
+  #          trackloss = ifelse(is.na(et_look), 1, 0)) %>%
+  #   rename(utrial = trial_trial,
+  #          ID = recording_session_label) %>%
+  #   select(ID, utrial, timestamp, timestamp_new, condition, side, target, distractor, trackloss) %>%
+  #   mutate(video_condition = 'eyetracked',
+  #          trial = paste(utrial, video_condition, sep = '_'))
+  #
+  # video_out <- clean3 %>%
+  #   mutate(target = ifelse(video_look != side, 1, 0), #switch side for video
+  #          distractor = ifelse(video_look == side, 1, 0),
+  #          trackloss = ifelse(is.na(video_look), 1, 0)) %>%
+  #   rename(utrial = trial_trial,
+  #          ID = recording_session_label) %>%
+  #   select(ID, utrial, timestamp, timestamp_new, condition, side, target, distractor, trackloss) %>%
+  #   mutate(video_condition = 'video',
+  #          trial = paste(utrial, video_condition, sep = '_'))
+  #
+  # all <- bind_rows(et_out, video_out)
   }
-
-  et_out <- clean3 %>%
-    mutate(target = ifelse(et_look == side, 1, 0),
-           distractor = ifelse(et_look != side, 1, 0),
-           trackloss = ifelse(is.na(et_look), 1, 0)) %>%
-    rename(utrial = trial_trial,
-           ID = recording_session_label) %>%
-    select(ID, utrial, timestamp, timestamp_new, condition, side, target, distractor, trackloss) %>%
-    mutate(video_condition = 'eyetracked',
-           trial = paste(utrial, video_condition, sep = '_'))
-
-  video_out <- clean3 %>%
-    mutate(target = ifelse(video_look != side, 1, 0), #switch side for video
-           distractor = ifelse(video_look == side, 1, 0),
-           trackloss = ifelse(is.na(video_look), 1, 0)) %>%
-    rename(utrial = trial_trial,
-           ID = recording_session_label) %>%
-    select(ID, utrial, timestamp, timestamp_new, condition, side, target, distractor, trackloss) %>%
-    mutate(video_condition = 'video',
-           trial = paste(utrial, video_condition, sep = '_'))
-
-  all <- bind_rows(et_out, video_out)
-  }
-  return(all)
 }
 
 # all2 <- all %>%

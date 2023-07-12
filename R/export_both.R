@@ -10,6 +10,12 @@
 #' @return a dataframe with annotation
 read_video_data <- function(filepath){
   data <- read_csv(filepath, skip = 1)
+
+  names <- names(data)
+  if(!'Timestamp' %in% names){
+    names(data)[[4]] <- 'Timestamp'
+  }
+
   return(data)
 }
 

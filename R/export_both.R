@@ -37,6 +37,7 @@ read_et_data <- function(filepath, sep = '\t'){
 #' @param et_data a rectangular data for eyetracking from read_et_data
 #' @param video_data a rectangular data from read_video_data
 #' @param hertz the capture rate of the video in hertz defaults to 100
+#' @param IA the label for the interest area. Defaults to bIA
 #' @param .return_full_data return unfiltered frame for debugging and recoding.
 #'
 #' @examples
@@ -48,7 +49,7 @@ read_et_data <- function(filepath, sep = '\t'){
 #'
 
 
-export_two_modularities <- function(et_data, video_data, hertz = 100, .return_full_data = F){
+export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA', .return_full_data = F){
 
   et_data2 <- et_data %>%
     janitor::clean_names()
@@ -118,9 +119,12 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, .return_fu
              average_interest_area_label = ifelse(!is.na(time) & !is.na(in_trial), lag(average_interest_area_label), average_interest_area_label)) %>%
       ungroup()
 
+lIA <- paste('LEFT', IA, sep = '_')
+rIA <- paste('RIGHT', IA, sep = '_')
+
     clean_all <- combined_all %>%
-      mutate(et_look = case_when(average_interest_area_label == 'LEFT_BIA' | left_interest_area_label == 'LEFT_BIA' | right_interest_area_label == 'LEFT_BIA' ~ 'L',
-                                 average_interest_area_label == 'RIGHT_BIA' | left_interest_area_label == 'RIGHT_BIA' | right_interest_area_label == 'RIGHT_BIA' ~ 'R',
+      mutate(et_look = case_when(average_interest_area_label == lIA | left_interest_area_label == lIA | right_interest_area_label == lIA ~ 'L',
+                                 average_interest_area_label == rIA | left_interest_area_label == rIA | right_interest_area_label == rIA ~ 'R',
                                  TRUE ~ NA_character_))
 
     clean2_all <- clean_all %>%

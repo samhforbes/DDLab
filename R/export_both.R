@@ -82,6 +82,7 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
 
   video_data2 <- video_data %>%
     janitor::clean_names() %>%
+    filter(task == 'VWM') %>%
     mutate(diff = time - lag(time),
            timestamp2 = ifelse(is.na(diff), timestamp, diff),
            timestamp2 = cumsum(timestamp2)) %>%

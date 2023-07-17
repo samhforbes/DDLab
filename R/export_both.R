@@ -180,7 +180,8 @@ rIA <- paste('RIGHT', IA, sep = '_')
              direction = et_look) %>%
       select(ID, utrial, timestamp, timestamp_new, direction, condition, side, target, distractor, trackloss) %>%
       mutate(video_condition = 'eyetracked',
-             trial = paste(utrial, video_condition, sep = '_'))
+             trial = paste(utrial, video_condition, sep = '_'),
+             direction = as.character(direction))
 
     video_out <- clean4 %>%
       mutate(video_look = ifelse(video_look == 'A', NA, video_look),
@@ -192,7 +193,8 @@ rIA <- paste('RIGHT', IA, sep = '_')
              direction = video_look) %>%
       select(ID, utrial, timestamp, timestamp_new, direction, condition, side, target, distractor, trackloss) %>%
       mutate(video_condition = 'video',
-             trial = paste(utrial, video_condition, sep = '_'))
+             trial = paste(utrial, video_condition, sep = '_'),
+             direction = as.character(direction))
 
     all <- bind_rows(et_out, video_out)
     #that is final for analysis

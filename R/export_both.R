@@ -58,7 +58,8 @@ read_et_data <- function(filepath, sep = '\t'){
 export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA', .return_full_data = F){
 
   et_data2 <- et_data %>%
-    janitor::clean_names()
+    janitor::clean_names() %>%
+  filter(task == 'VWM')
 
   namey <- names(et_data2)
   namey <- namey[namey != 'timestamp']
@@ -82,7 +83,6 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
 
   video_data2 <- video_data %>%
     janitor::clean_names() %>%
-    filter(task == 'VWM') %>%
     mutate(diff = time - lag(time),
            timestamp2 = ifelse(is.na(diff), timestamp, diff),
            timestamp2 = cumsum(timestamp2)) %>%

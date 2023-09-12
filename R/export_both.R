@@ -110,17 +110,24 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
 
 
     combined_all <- check %>%
-      mutate(trial_trial = stringr::word(trial_label, 2, sep = ' ')) %>%
-      fill(trial_trial) %>%
+      mutate(trial_trial = stringr::word(trial_label, 2, sep = ' '),
+             trial_trial = ifelse(is.na(trial_trial) & !is.na(lead(trial_trial)) &
+                                    !is.na(lag(trial_trial)), lead(trial_trial), trial_trial)) %>%
+      group_by(trial_trial) %>%
       fill(all_of(namey), .direction = 'down') %>%
       fill(track_name) %>% # bad bad bad
-      group_by(trial_trial) %>%
-      mutate(in_trial = ifelse(sample_message == 'DISPLAY_FLASH', 1, NA),
-             in_trial = ifelse(sample_message == "Trial ended by timeout", 0, in_trial)) %>%
-      fill(in_trial) %>% #add end buffer
+      # mutate(trial_trial = as.factor(trial_trial)) %>%
+      # group_by(trial_trial, .drop = T) %>%
+      # mutate(trial_end = last(timestamp)) %>%
+      # ungroup() %>%
+      mutate(trial_end_time = ifelse(sample_message == "Trial ended by timeout", timestamp, NA)) %>%
+      fill(trial_end_time, .direction = 'up') %>%
+      mutate(in_trial = ifelse(timestamp >= trial_start_time & timestamp <= trial_end_time, 1, NA)) %>%
+
+      # fill(in_trial) %>% #add end buffer
       mutate(intrial = ifelse(in_trial == 0, NA, in_trial),
-             start_time = first(timestamp),
-             timestamp_new = timestamp - start_time) %>% #fill blank from merge below
+             # start_time = first(timestamp),
+             timestamp_new = timestamp - trial_start_time) %>% #fill blank from merge below
       mutate(left_interest_area_label = ifelse(!is.na(time) & !is.na(in_trial), lag(left_interest_area_label), left_interest_area_label),
              right_interest_area_label = ifelse(!is.na(time) & !is.na(in_trial), lag(right_interest_area_label), right_interest_area_label),
              average_interest_area_label = ifelse(!is.na(time) & !is.na(in_trial), lag(average_interest_area_label), average_interest_area_label)) %>%

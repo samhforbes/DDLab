@@ -16,4 +16,4 @@ Imports: fmsb,
          irr,
          readr,
          stringr
-RoxygenNote: 7.1.2
+RoxygenNote: 7.3.2

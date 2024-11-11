@@ -4,7 +4,13 @@
 \alias{export_two_modularities}
 \title{export a combined video and et dataframe in long form}
 \usage{
-export_two_modularities(et_data, video_data, hertz = 100)
+export_two_modularities(
+  et_data,
+  video_data,
+  hertz = 100,
+  IA = "BIA",
+  .return_full_data = F
+)
 }
 \arguments{
 \item{et_data}{a rectangular data for eyetracking from read_et_data}
@@ -12,6 +18,10 @@ export_two_modularities(et_data, video_data, hertz = 100)
 \item{video_data}{a rectangular data from read_video_data}
 
 \item{hertz}{the capture rate of the video in hertz defaults to 100}
+
+\item{IA}{the label for the interest area. Defaults to bIA}
+
+\item{.return_full_data}{return unfiltered frame for debugging and recoding.}
 }
 \description{
 Please do check that the output matches what you want to use

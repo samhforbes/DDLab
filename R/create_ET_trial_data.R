@@ -100,7 +100,7 @@ create_ET_trial_data <- function(data, task, write = F, show_all_missing = F){
 }
 
 
-#' create a trial report from a sample eyetracking data
+#' create a trial report from a sample eyetracking data cleaned the way Sam likes it.
 #'
 #' This was designed to work with cleaned eyetracking data reports and the VWM trial.
 #' I can't guarantee it will bring out what you want beyond that so please check

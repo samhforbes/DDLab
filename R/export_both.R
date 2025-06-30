@@ -83,9 +83,10 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
 
   video_data2 <- video_data %>%
     janitor::clean_names() %>%
-    mutate(diff = time - lag(time),
-           timestamp2 = ifelse(is.na(diff), timestamp, diff),
-           timestamp2 = cumsum(timestamp2)) %>%
+    mutate(diff = hertz, #change from time
+           start = ifelse(timestamp == first(timestamp), first(timestamp), hertz),
+           timestamp2 = cumsum(start)) %>%
+           # timestamp2 = ifelse(is.na(timestamp2), timestamp, timestamp2)) %>%
     rename(timestamp_old = timestamp,
            timestamp = timestamp2)
 

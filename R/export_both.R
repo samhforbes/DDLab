@@ -59,7 +59,8 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
 
   et_data2 <- et_data %>%
     janitor::clean_names() %>%
-  filter(task == 'VWM')
+  filter(task == 'VWM') %>%
+    filter(source_file != 'ag_hd_w.mov' )
 
   namey <- names(et_data2)
   namey <- namey[namey != 'timestamp']
@@ -190,7 +191,11 @@ rIA <- paste('RIGHT', IA, sep = '_')
       select(ID, utrial, timestamp, timestamp_new, direction, condition, side, target, distractor, trackloss) %>%
       mutate(video_condition = 'eyetracked',
              trial = paste(utrial, video_condition, sep = '_'),
-             direction = as.character(direction))
+             direction = as.character(direction),
+             utrial = as.character(utrial),
+             ID = as.character(ID),
+             condition = as.character(condition),
+             side = as.character(side))
 
     video_out <- clean4 %>%
       mutate(video_look = ifelse(video_look == 'A', NA, video_look),
@@ -205,7 +210,9 @@ rIA <- paste('RIGHT', IA, sep = '_')
              trial = paste(utrial, video_condition, sep = '_'),
              direction = as.character(direction),
              utrial = as.character(utrial),
-             ID = as.character(ID))
+             ID = as.character(ID),
+             condition = as.character(condition),
+             side = as.character(side))
 
     all <- bind_rows(et_out, video_out)
     #that is final for analysis

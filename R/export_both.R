@@ -203,7 +203,9 @@ rIA <- paste('RIGHT', IA, sep = '_')
       select(ID, utrial, timestamp, timestamp_new, direction, condition, side, target, distractor, trackloss) %>%
       mutate(video_condition = 'video',
              trial = paste(utrial, video_condition, sep = '_'),
-             direction = as.character(direction))
+             direction = as.character(direction),
+             utrial = as.character(utrial),
+             ID = as.character(ID))
 
     all <- bind_rows(et_out, video_out)
     #that is final for analysis

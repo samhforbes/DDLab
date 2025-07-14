@@ -82,6 +82,11 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
     video_data <- video_data[a:nrow(video_data),]
   }
 
+  # remove numbers with extra digit
+  while(first(video_data$Timestamp) > median(video_data$Timestamp, na.rm = T) + 800000){
+    video_data <- video_data[2:nrow(video_data),]
+  }
+
   video_data2 <- video_data %>%
     janitor::clean_names() %>%
     mutate(diff = hertz, #change from time

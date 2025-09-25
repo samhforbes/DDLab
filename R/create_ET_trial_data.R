@@ -3,6 +3,7 @@
 #' This was designed to work with eyelink fixation reports and the VWM trial.
 #' I can't guarantee it will bring out what you want beyond that so please check
 #' the output carefully.
+#' Requires - CURRENT FIXATION DURATION, CF IA LABEL, CF_RUN_INDEX
 #'
 #' @param data a dataframe read in from a fixation report CSV or txt
 #' @param task in quotes, a string regarding the task you are interested in from the task column

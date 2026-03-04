@@ -137,11 +137,14 @@ join_CS_to_VE <- function(change_data, visexp_data, .other = NULL){
 #' @param input_file a text file
 #' @param output_location output location
 #' @param save_raw if T then exports raw as well as summarised
+#' @param task a task
+#' @param .kappa_start pass to get_kappa
+#' @param .kappa_stop pass to get_kappa
 #'
 #' @export
 #' @return all the data
 
-convert_and_compare <- function(input_file, output_location = '', save_raw = F, .kappa_start = 0, .kappa_stop = 10000){
+convert_and_compare <- function(input_file, output_location = '', save_raw = F, task = 'VWM', .kappa_start = 0, .kappa_stop = 10000){
 
   input_file <- read_csv(input_file,
                          col_names = F)

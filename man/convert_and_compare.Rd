@@ -5,7 +5,14 @@
 \title{Master run
 Do the lot!}
 \usage{
-convert_and_compare(input_file, output_location = "", save_raw = F)
+convert_and_compare(
+  input_file,
+  output_location = "",
+  save_raw = F,
+  task = "VWM",
+  .kappa_start = 0,
+  .kappa_stop = 10000
+)
 }
 \arguments{
 \item{input_file}{a text file}
@@ -13,6 +20,12 @@ convert_and_compare(input_file, output_location = "", save_raw = F)
 \item{output_location}{output location}
 
 \item{save_raw}{if T then exports raw as well as summarised}
+
+\item{task}{a task}
+
+\item{.kappa_start}{pass to get_kappa}
+
+\item{.kappa_stop}{pass to get_kappa}
 }
 \value{
 all the data

@@ -148,7 +148,7 @@ convert_and_compare <- function(input_file, output_location = '', save_raw = F, 
 
   input_file <- read_csv(input_file,
                          col_names = F)
-  for(i in 1:nrow(inout_file)){
+  for(i in 1:nrow(input_file)){
     ID <- input_file[[2]][[i]]
     Camera <- input_file[[3]][[i]]
     Path = input_file[[1]][[i]]

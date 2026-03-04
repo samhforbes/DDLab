@@ -13,7 +13,8 @@ Depends: dplyr,
          readr,
          data.table,
          eyetrackingR,
-         ggplot2
+         ggplot2,
+         tidyverse
 Imports: fmsb,
          irr,
          readr,

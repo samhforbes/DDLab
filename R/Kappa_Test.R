@@ -81,3 +81,35 @@ return(output)
 #.4 - .6 moderate, .6 - .8 substantial, >.8 almost perfect
 
 
+#' Kappa from ML
+#'
+#' @param data a dataset ready for ML and ET
+#' @param start a start time
+#' @param stop a stop time
+#'
+#' @export
+#' @return a kappa value
+
+
+get_kappa_value <- function(data, start_time = 0, stop_time = 10000){
+
+  full4 <- data %>%
+    select(-side, -trial)
+
+  full_wide2 <- full4 %>%
+    # filter(trackloss != 1) %>%
+    pivot_wider(id_cols = c(1:5), names_from = 'video_condition', values_from = 'direction')  %>%
+    filter(timestamp_new > start_time & timestamp_new < stop_time)
+  #%>%
+  # filter(!is.na(eyetracked),
+  #        !is.na(video))
+
+  output <- full_wide2 %>% select(eyetracked, video) %>% irr::kappa2(weight = 'unweighted')
+  # output2 <- full_wide2 %>% select(eyetracked, video) %>% irr::kappam.fleiss(detail = T)
+  # output3 <- fmsb::Kappa.test(x = full_wide2$eyetracked, y = full_wide2$video)
+
+  print(output)
+  return(output$value)
+
+
+}

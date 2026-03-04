@@ -9,7 +9,8 @@ export_two_modularities(
   video_data,
   hertz = 100,
   IA = "BIA",
-  .return_full_data = F
+  .return_full_data = F,
+  task = "VWM"
 )
 }
 \arguments{

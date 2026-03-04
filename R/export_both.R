@@ -59,7 +59,7 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
 
   et_data2 <- et_data %>%
     janitor::clean_names() %>%
-  filter(task == task) %>%
+  # filter(.data$task == task) %>%
     filter(source_file != 'ag_hd_w.mov' )
 
   namey <- names(et_data2)
@@ -69,6 +69,7 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
   namey <- namey[namey != "left_interest_area_label"]
   namey <- namey[namey != "right_interest_area_label"]
 
+  # fix messaging
   if(!'DISPLAY_FLASH' %in% unique(et_data2$sample_message)){
     et_data2 <- et_data2 %>%
       mutate(sample_message = ifelse(sample_message == 'Video Component'|
@@ -76,9 +77,11 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
                                      'DISPLAY_FLASH', sample_message))
   }
 
+  # fix false starts
   a <- first(which(video_data$Timestamp > 0))
 
   if(a != 1){
+    message('Cutting bad rows \n')
     video_data <- video_data[a:nrow(video_data),]
   }
 
@@ -91,16 +94,33 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
     video_data <- video_data[2:nrow(video_data),]
   }
 
+  # video_data2 <- video_data %>%
+  #   janitor::clean_names() %>%
+  #   mutate(diff = hertz, #change from time
+  #          start = ifelse(timestamp == first(timestamp), first(timestamp), hertz),
+  #          start = ifelse(is.na(start), hertz, start),
+  #          timestamp2 = cumsum(start)) %>%
+  #          # timestamp2 = ifelse(is.na(timestamp2), timestamp, timestamp2)) %>%
+  #   rename(timestamp_old = timestamp,
+  #          timestamp = timestamp2)
+
   video_data2 <- video_data %>%
     janitor::clean_names() %>%
-    mutate(diff = hertz, #change from time
-           start = ifelse(timestamp == first(timestamp), first(timestamp), hertz),
-           start = ifelse(is.na(start), hertz, start),
-           timestamp2 = cumsum(start)) %>%
-           # timestamp2 = ifelse(is.na(timestamp2), timestamp, timestamp2)) %>%
+    mutate(
+      dt_prev = timestamp - lag(timestamp),
+      dt_next = lead(timestamp) - timestamp,
+      expected = median(dt_prev[dt_prev > 0], na.rm = TRUE),
+      dt_clean = case_when(
+        dt_prev > 5 * expected & dt_next < -5 * expected ~ expected, # OCR spike
+        dt_prev < -5 * expected & lag(dt_prev) > 5 * expected ~ expected,
+        TRUE ~ dt_prev)) %>%
+      mutate(dt_clean = coalesce(dt_clean, expected),
+             dt_clean = replace(dt_clean, 1, first(timestamp)),
+             timestamp_fixed = cumsum(dt_clean)) %>%
     rename(timestamp_old = timestamp,
-           timestamp = timestamp2)
+           timestamp = timestamp_fixed)
 
+  # useful mode helper
   getmode <- function(v) {
     uniqv <- unique(v)
     uniqv[which.max(tabulate(match(v, uniqv)))]
@@ -125,7 +145,7 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
       mutate(trial_trial = stringr::word(trial_label, 2, sep = ' '),
              trial_trial = ifelse(is.na(trial_trial) & !is.na(lead(trial_trial)) &
                                     !is.na(lag(trial_trial)), lead(trial_trial), trial_trial)) %>%
-      group_by(trial_trial) %>%
+      group_by(task, trial_trial) %>%
       fill(all_of(namey), .direction = 'down') %>%
       fill(track_name) %>% # bad bad bad
       # mutate(trial_trial = as.factor(trial_trial)) %>%
@@ -145,7 +165,7 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
              average_interest_area_label = ifelse(!is.na(time) & !is.na(in_trial), lag(average_interest_area_label), average_interest_area_label)) %>%
       ungroup()
 
-lIA <- paste('LEFT', IA, sep = '_')
+lIA <- paste('LEFT', IA, sep = '_') #bangbang
 rIA <- paste('RIGHT', IA, sep = '_')
 
     clean_all <- combined_all %>%
@@ -159,6 +179,7 @@ rIA <- paste('RIGHT', IA, sep = '_')
                                     track_name == 'away' ~ 'A',
                                     TRUE ~ NA_character_)) %>%
       mutate(video_in_frame = ifelse(!is.na(time), 1, NA)) #%>%
+      # filter(.data$task == task) #%>%
       # fill(et_look)
 
     #this is Jake export
@@ -174,13 +195,13 @@ rIA <- paste('RIGHT', IA, sep = '_')
 
     clean3 <- clean2_all %>%
       filter(in_trial == 1) %>%
-      group_by(trial, trial_trial) %>%
+      group_by(task, trial, trial_trial) %>%
       mutate(diff2 = timestamp - lag(timestamp),
       timebin = floor(timestamp_new / hertz)) %>%
       ungroup()
 
     clean4 <- clean3 %>%
-      group_by(trial, trial_trial, condition, side,
+      group_by(task, trial, trial_trial, condition, side,
                timebin) %>%
       summarise(recording_session_label = first(recording_session_label),
                 et_look = getmode(et_look),
@@ -195,10 +216,11 @@ rIA <- paste('RIGHT', IA, sep = '_')
       mutate(target = ifelse(et_look == side, 1, 0),
              distractor = ifelse(et_look != side, 1, 0),
              trackloss = ifelse(is.na(et_look), 1, 0)) %>%
+      # filter(task == task)  %>% #here
       rename(utrial = trial,
              ID = recording_session_label,
              direction = et_look) %>%
-      select(ID, utrial, timestamp, timestamp_new, direction, condition, side, target, distractor, trackloss) %>%
+      select(ID, task, utrial, timestamp, timestamp_new, direction, condition, side, target, distractor, trackloss) %>%
       mutate(video_condition = 'eyetracked',
              trial = paste(utrial, video_condition, sep = '_'),
              direction = as.character(direction),
@@ -212,10 +234,11 @@ rIA <- paste('RIGHT', IA, sep = '_')
              target = ifelse(video_look == side, 1, 0), #don't switch side (above)
              distractor = ifelse(video_look != side, 1, 0),
              trackloss = ifelse(is.na(video_look), 1, 0)) %>%
+      # filter(task == task)  %>% #here
       rename(utrial = trial,
              ID = recording_session_label,
              direction = video_look) %>%
-      select(ID, utrial, timestamp, timestamp_new, direction, condition, side, target, distractor, trackloss) %>%
+      select(ID, task, utrial, timestamp, timestamp_new, direction, condition, side, target, distractor, trackloss) %>%
       mutate(video_condition = 'video',
              trial = paste(utrial, video_condition, sep = '_'),
              direction = as.character(direction),
@@ -224,7 +247,8 @@ rIA <- paste('RIGHT', IA, sep = '_')
              condition = as.character(condition),
              side = as.character(side))
 
-    all <- bind_rows(et_out, video_out)
+    all <- bind_rows(et_out, video_out)  # %>%
+      # filter(.data$task == task)  #bangbang
     #that is final for analysis
 
     #check ratios of left look

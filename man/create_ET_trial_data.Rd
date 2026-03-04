@@ -22,6 +22,7 @@ A formatted dataframe with CP, SwitchRate, MLD and TLT, as well as coding info.
 This was designed to work with eyelink fixation reports and the VWM trial.
 I can't guarantee it will bring out what you want beyond that so please check
 the output carefully.
+Requires - CURRENT FIXATION DURATION, CF IA LABEL, CF_RUN_INDEX
 }
 \examples{
 library(readr)

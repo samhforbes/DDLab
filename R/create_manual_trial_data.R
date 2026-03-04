@@ -160,3 +160,99 @@ create_manual_trial_data <- function(data, write = F){
 
   return(dvdata2)
 }
+
+
+#' create a trial report from a robocode data
+#'
+#' This was designed to work with icatcher frame-by-frame reports and the VWM trial.
+#' I can't guarantee it will bring out what you want beyond that so please check
+#' the output carefully.
+#'
+#' @param data a dataframe read in from a icatcher report combined CSV or txt
+#' @param write if TRUE will save a csv in the current working directory
+#'
+#' @examples
+#' library(readr)
+#' data <- read_csv("datavyudata.csv")
+#' data_out <- create_manual_trial_data(data, write = F)
+#'
+#' @export
+#'
+#' @return A formatted dataframe with CP, SwitchRate, MLD and TLT, as well as coding info
+
+create_manual_trial_data2 <- function(data,
+                                      write = F){
+
+
+  data2 <- data %>%
+    mutate(ID = ID,
+           Trial = trial,
+           Direction = direction,
+           ChangeSide = side,
+           Load = condition,
+           time = timestamp_new)
+
+  samplerate = data2$time[2] - data2$time[1]
+
+
+  idx <- which(duplicated(names(data)))
+  if(length(idx) > 0){
+    warning('You have multiple columns with the same name. We shall proceed anyway, but you may wish to remove and try again!')
+    data2 <- data2[,-idx]
+  }
+
+  dvdata <- data2  %>%
+    tidyr::fill(ID) %>%
+    mutate(Direction = stringr::str_to_upper(Direction),
+           ChangeSide = stringr::str_to_upper(ChangeSide)) %>%
+    mutate(.lag = time - lag(time),
+           .lag = ifelse(is.na(.lag), samplerate, .lag)) %>% #approximate lag with sample rate if needs be
+    group_by(ID, Trial) %>%
+    mutate(Left = ifelse(Direction == 'L', .lag, 0), #no direction switch
+           Right = ifelse(Direction == 'R', .lag, 0),
+           Left = ifelse(Left < 0, NA, Left),
+           Right = ifelse(Right < 0, NA, Right),
+           Duration = ifelse(Left != 0, Left,
+                             ifelse(Right != 0, Right, 0))) %>%
+    ungroup() %>%
+    filter(!is.na(Trial)) %>%
+    # mutate(Look_Ord = TrialLook.looking_ordinal) %>%
+    select(-.lag)
+
+  dvdata2 <- dvdata %>%
+    # select(ID, Trial, ChangeSide, Load, Direction, Duration, Left, Right)  %>%
+    group_by(ID, Trial) %>%
+    mutate(CURRENT_FIX_INTEREST_AREA_LABEL = case_when(target == 1 ~ 'target',
+                                                       distractor == 1 ~ 'distractor',
+                                                       trackloss == 1 ~ 'trackloss',
+                                                       TRUE ~ 'trackloss')) %>%
+    mutate(CURRENT_FIX_START = ifelse(first(CURRENT_FIX_INTEREST_AREA_LABEL == 'trackloss'), 0, 1),
+           CURRENT_FIX_START = ifelse(CURRENT_FIX_INTEREST_AREA_LABEL != lag(CURRENT_FIX_INTEREST_AREA_LABEL) & CURRENT_FIX_INTEREST_AREA_LABEL != 'trackloss', CURRENT_FIX_START + 1, CURRENT_FIX_START),
+           CURRENT_FIX_RUN_INDEX = cumsum(CURRENT_FIX_START)) %>%
+    # mutate(Looks = ifelse(row_number()==1, 1, 0),
+    #        Looks = ifelse(is.na(Looks), 0, Looks)) %>%
+    ungroup() %>%
+    # select(-Look_Ord) %>%
+    filter(Direction == 'L' | Direction == 'R') %>%
+    group_by(ID, Trial, ChangeSide, Load) %>%
+    mutate(Switch = 0) %>%
+    mutate(Switch = ifelse(lag(Direction) != Direction, 1, 0)) %>%
+    mutate(Switch = ifelse(is.na(Switch), 0, Switch)) %>%
+    summarise(Left = sum(Left, na.rm = T),
+              Right = sum(Right, na.rm = T),
+              Switch = sum(Switch, na.rm = T),
+              Looks = sum(CURRENT_FIX_START, na.rm = T),
+              Tar = sum(target),
+              Dis = sum(distractor),
+              TLT = Left + Right) %>% #not sum
+    mutate(PercLook = TLT/10000,
+           MLD = TLT/Looks,
+           SR = Switch/(TLT/1000),
+           CP = ifelse(ChangeSide == 'L', Left/TLT, Right/TLT),
+           Both = ifelse(Left > 0 & Right > 0, 'Y', 'N')) %>%
+    ungroup() %>%
+    mutate(video_condition = word(Trial, 2, sep = '_'))
+
+
+  return(dvdata2)
+}

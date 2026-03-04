@@ -195,7 +195,7 @@ convert_and_compare <- function(input_file, output_location = '', save_raw = F, 
                                    treat_non_aoi_looks_as_missing = F)
 
     if(save_raw == TRUE){
-      savename <- paste(output_location, ID, '_Video',Camera,'_raw.csv', sep = '')
+      savename <- paste(output_location, '/', ID, '_Video',Camera,'_raw.csv', sep = '')
 
       write_csv(full, file = savename)
     }
@@ -211,7 +211,7 @@ convert_and_compare <- function(input_file, output_location = '', save_raw = F, 
 
     all$participant_kappa <- kappa
 
-    savename2 <- paste(output_location, ID, '_Video',Camera,'.csv', sep = '')
+    savename2 <- paste(output_location, '/', ID, '_Video',Camera,'.csv', sep = '')
     write_csv(all, file = savename2)
 
   }

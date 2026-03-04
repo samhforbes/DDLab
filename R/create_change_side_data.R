@@ -153,8 +153,8 @@ convert_and_compare <- function(input_file, output_location = '', save_raw = F, 
     Camera <- input_file[[3]][[i]]
     Path = input_file[[1]][[i]]
 
-    pathML <- paste(path, '/', ID, '/', Camera, sep = '')
-    pathET <- paste(path, '/', ID, sep = '')
+    pathML <- paste(Path, '/', ID, '/', Camera, sep = '')
+    pathET <- paste(Path, '/', ID, sep = '')
 
     mylist <- list.dirs(pathET)
 

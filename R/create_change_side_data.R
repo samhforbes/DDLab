@@ -169,8 +169,8 @@ convert_and_compare <- function(input_file, output_location = '', save_raw = F, 
     # myfiles <- mylist[2:31]
 
 
-    etlist <- list.files(pathET, pattern = 'Output_', recursive = T, full.names = T)
-    mllist <- list.files(pathML, pattern = 'livecapture_', recursive = T, full.names = T)
+    etlist <- list.files(pathET, pattern = 'Output_', recursive = F, full.names = T)
+    mllist <- list.files(pathML, pattern = 'livecapture_', recursive = F, full.names = T)
 
     mllist <- mllist[grepl("\\.txt$", mllist)]
 

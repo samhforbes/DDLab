@@ -96,6 +96,12 @@ get_kappa_value <- function(data, start_time = 0, stop_time = 10000){
   full4 <- data %>%
     select(-side, -trial)
 
+  data_sum <- data %>%
+    filter(video_condition == 'eyetracked') %>%
+    filter(!is.na(target) | !is.na(distractor))
+
+  if(nrow(data_sum > 0)){
+
   full_wide2 <- full4 %>%
     # filter(trackloss != 1) %>%
     pivot_wider(id_cols = c(1:5), names_from = 'video_condition', values_from = 'direction')  %>%
@@ -110,6 +116,10 @@ get_kappa_value <- function(data, start_time = 0, stop_time = 10000){
 
   print(output)
   return(output$value)
-
+  }else{
+  a <- NA
+  message('No Kappa to calculate :( \n')
+  return(a)
+}
 
 }

@@ -36,6 +36,9 @@ create_change_side_data <- function(data, window_start = 1750, window_stop = 675
   #compare rough classification
   table(ETanalysis4_t$FirstLook, ETanalysis4_t$video_condition)
 
+  a <- ETanalysis4_t %>%
+    filter(video_condition == 'eyetracked')
+  if(nrow(a) > 0){
   #new
   ET_test <- ETanalysis4_t %>%
     select(ID, utrial, condition, video_condition, FirstLook) %>%
@@ -45,6 +48,10 @@ create_change_side_data <- function(data, window_start = 1750, window_stop = 675
 
   val <- table(ET_test$Agree)[['Y']]/nrow(ET_test)
   message('First look agreement is ' , val, ' \n')
+  }else{
+    message('No eyetracking data to report for comparison \n')
+    val <- NA
+  }
 
   # better to constrain to FirstLook within 2500ms using ET
   ETanalysis4_2b <- ETanalysis4 %>%
@@ -56,7 +63,7 @@ create_change_side_data <- function(data, window_start = 1750, window_stop = 675
     filter(FirstTime < 2500)  %>%
     mutate(FirstLook = ifelse(FirstT == TRUE, 'Change', 'No_Change')) %>%
     ungroup() %>%
-    filter(video_condition == 'eyetracked') %>%
+    filter(video_condition == 'video') %>% # change to video
     select(-video_condition, -trial)
 
   # join back and apply classification to both

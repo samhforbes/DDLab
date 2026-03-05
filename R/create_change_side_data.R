@@ -177,6 +177,10 @@ convert_and_compare <- function(input_file, output_location = '', save_raw = F, 
     ETfiles <- lapply(etlist, read_et_data)
     MLfiles <- lapply(mllist, read_video_data)
 
+    Note <- ETfiles[[1]][[1]][[1]]
+
+    message('now we are looking at ', Note, '! \n')
+
     file_out <- list()
     for(i in 1:length(ETfiles)){
       #  file_out[[i]] <- export_two_modularities(ETfiles[[i]], MLfiles[[i]], IA='BIA')

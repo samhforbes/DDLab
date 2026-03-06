@@ -107,6 +107,9 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
   video_data2 <- video_data %>%
     janitor::clean_names() %>%
     mutate(
+      .nchar = nchar(timestamp),
+      .problem = ifelse(.nchar > median(.nchar, na.rm = T), 1, 0),
+      timestamp = ifelse(.problem == 1, NA, timestamp),
       dt_prev = timestamp - lag(timestamp),
       dt_next = lead(timestamp) - timestamp,
       expected = median(dt_prev[dt_prev > 0], na.rm = TRUE),
@@ -119,6 +122,16 @@ export_two_modularities <- function(et_data, video_data, hertz = 100, IA = 'BIA'
              timestamp_fixed = cumsum(dt_clean)) %>%
     rename(timestamp_old = timestamp,
            timestamp = timestamp_fixed)
+
+  ocr_issue <- sum(video_data2$.problem, na.rm = T)
+
+  if(ocr_issue >= 1){
+    warning('Time warp detected. \n
+            Proceeding with ', ocr_issue, ' frames smoothed \n')
+  }
+
+  video_data2 <- video_data2 %>%
+    select(-.problem, -.nchar)
 
   # useful mode helper
   getmode <- function(v) {

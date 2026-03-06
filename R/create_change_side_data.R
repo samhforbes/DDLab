@@ -131,7 +131,8 @@ join_CS_to_VE <- function(change_data, visexp_data, .other = NULL){
     summarise(TLT = mean(TLT, na.rm = T),
               MLD = mean(MLD, na.rm = T),
               SR = mean(SR, na.rm = T),
-              CP10 = mean(CP, na.tm = T))
+              CP10 = mean(CP, na.tm = T),
+              ntrial = n())
 
   all_data <- full_join(change_data, VE_data)
 

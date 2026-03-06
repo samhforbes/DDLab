@@ -38,16 +38,22 @@ create_change_side_data <- function(data, window_start = 1750, window_stop = 675
 
   a <- ETanalysis4_t %>%
     filter(video_condition == 'eyetracked')
+
   if(nrow(a) > 0){
-  #new
-  ET_test <- ETanalysis4_t %>%
-    select(ID, utrial, condition, video_condition, FirstLook) %>%
-    pivot_wider(names_from = video_condition, values_from = FirstLook) %>%
-    mutate(Agree = ifelse(eyetracked == video, 'Y', 'N'))
+    #new
+    ET_test <- ETanalysis4_t %>%
+      select(ID, utrial, condition, video_condition, FirstLook) %>%
+      pivot_wider(names_from = video_condition, values_from = FirstLook) %>%
+      mutate(Agree = ifelse(eyetracked == video, 'Y', 'N'))
 
+    zzz <- table(ET_test$Agree)
 
-  val <- table(ET_test$Agree)[['Y']]/nrow(ET_test)
-  message('First look agreement is ' , val, ' \n')
+    if('Y' %in% names(zzz)){
+      val <- zzz[['Y']]/nrow(ET_test)
+      message('First look agreement is ' , val, ' \n')
+    }else{
+      message('First look agreement is 0 \n (I think)')
+    }
   }else{
     message('No eyetracking data to report for comparison \n')
     val <- NA
@@ -91,14 +97,28 @@ create_change_side_data <- function(data, window_start = 1750, window_stop = 675
 
   windowFL <- windowMis
 
+  # windowMisWide <- windowFL %>%
+  #   select(ID, video_condition, condition, FirstLook, Prop) %>%
+  #   spread(FirstLook, Prop) %>%
+  #   rename(Prop_C = Change) %>%
+  #   rename(Prop_NC = No_Change) %>%
+  #   #select(-No_Change) %>%
+  #   mutate(Prop_NC = ifelse(is.nan(Prop_NC), NA, Prop_NC),
+  #          Prop_C = ifelse(is.nan(Prop_C), NA, Prop_C))
+
   windowMisWide <- windowFL %>%
+    mutate(FirstLook = factor(FirstLook, levels = c("Change", "No_Change"))) %>%
     select(ID, video_condition, condition, FirstLook, Prop) %>%
-    spread(FirstLook, Prop) %>%
-    rename(Prop_C = Change) %>%
-    rename(Prop_NC = No_Change) %>%
-    #select(-No_Change) %>%
-    mutate(Prop_NC = ifelse(is.nan(Prop_NC), NA, Prop_NC),
-           Prop_C = ifelse(is.nan(Prop_C), NA, Prop_C))
+    pivot_wider(
+      names_from = FirstLook,
+      values_from = Prop,
+      names_expand = TRUE
+    ) %>%
+    rename(
+      Prop_C = Change,
+      Prop_NC = No_Change
+    ) %>%
+    mutate(across(c(Prop_C, Prop_NC), ~ ifelse(is.nan(.), NA, .)))
 
   windowMisWideOutput <- windowMisWide %>%
     select(ID, video_condition, condition, Prop_C, Prop_NC)

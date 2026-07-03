@@ -10,13 +10,22 @@
 #' @return a summary output
 
 create_change_side_data <- function(data, window_start = 1750, window_stop = 6750, side = 'side', trackloss = .75,
-                                    time_column = 'Timestamp',
-                                    aoi_columns = c('Target', 'Distractor'),
-                                    trackloss_column = 'Trackloss',
+                                    time_column = 'timestamp_new',
+                                    aoi_columns = c('target', 'distractor'),
+                                    trackloss_column = 'trackloss',
                                     participant_column = 'ID',
-                                    trial_column = 'UTrial'){
+                                    trial_column = 'trial'){
 
   # to do: come back and generalise
+  if('target' %in% colnames(data) == FALSE){
+    data <- data %>%
+      mutate(Target = ifelse(ChangeSide == Direction, 1, 0),
+           Distractor = ifelse(ChangeSide != Direction, 1, 0),
+           Trackloss = ifelse(Direction == 'away' | Direction == 'none' | Direction == 'noface', 1, 0),
+           target = ifelse(is.na(Target), 0, Target),
+           distractor = ifelse(is.na(Distractor), 0, Distractor),
+           trackloss = ifelse(is.na(Trackloss), 0, Trackloss))
+  }
 
   ETanalysis <- data %>% #JOHN should this come from full_filter instead?
     filter(!is.na(condition))
@@ -158,6 +167,147 @@ join_CS_to_VE <- function(change_data, visexp_data, .other = NULL){
 
   return(all_data)
 }
+
+
+#' create change side data2
+#'
+#' Comes from robocode data only
+#'
+#' @param window_start start time
+#' @param window_stop stop time
+#' @param side side column
+#' @param trackloss trackloss prop, default .75
+#'
+#' @export
+#'
+#' @return a summary output
+
+create_change_side_data2 <- function(data, window_start = 1750, window_stop = 6750, side = 'side', trackloss = .75,
+                                    time_column = 'timestamp_new',
+                                    aoi_columns = c('target', 'distractor'),
+                                    trackloss_column = 'trackloss',
+                                    participant_column = 'ID',
+                                    trial_column = 'trial'){
+
+  # to do: come back and generalise
+  data <- data %>%
+    mutate(ID = ID,
+           Trial = trial,
+           Direction = direction,
+           ChangeSide = side,
+           Load = condition,
+           time = timestamp_new)
+
+
+
+  if('target' %in% colnames(data) == FALSE){
+    data <- data %>%
+      mutate(Target = ifelse(ChangeSide == Direction, 1, 0),
+             Distractor = ifelse(ChangeSide != Direction, 1, 0),
+             Trackloss = ifelse(Direction == 'away' | Direction == 'none' | Direction == 'noface', 1, 0),
+             target = ifelse(is.na(Target), 0, Target),
+             distractor = ifelse(is.na(Distractor), 0, Distractor),
+             trackloss = ifelse(is.na(Trackloss), 0, Trackloss))
+  }
+
+  data <- make_eyetrackingr_data(data,
+                                 time_column = 'timestamp_new',
+                                 aoi_columns = c('target', 'distractor'),
+                                 trackloss_column = 'trackloss',
+                                 participant_column = 'ID',
+                                 trial_column = 'trial',
+                                 treat_non_aoi_looks_as_missing = T)
+
+  ETanalysis <- data %>% #JOHN should this come from full_filter instead?
+    filter(!is.na(condition))
+
+  ETanalysis4 <- ETanalysis %>%
+    filter(timestamp_new >= 1000, timestamp_new <= 10000) #1000 is first change
+
+  # split by first change at 1000
+  ETanalysis4_t <- ETanalysis4 %>%
+    group_by(ID, trial, condition, video_condition) %>%
+    filter(!is.na(target)) %>% #ie remove trackloss
+    summarise(FirstT = first(target),
+              FirstTime = first(timestamp_new)) %>%
+    mutate(FirstLook = ifelse(FirstT == TRUE, 'Change', 'No_Change')) %>%
+    ungroup()
+
+  #compare rough classification
+  table(ETanalysis4_t$FirstLook, ETanalysis4_t$video_condition)
+
+  # better to constrain to FirstLook within 2500ms using ET
+  ETanalysis4_2b <- ETanalysis4 %>%
+    filter(timestamp_new >= 1000, timestamp_new <= 10000) %>% #update using 1d format
+    group_by(ID, trial, condition, video_condition) %>%
+    filter(!is.na(target)) %>%
+    summarise(FirstT = first(target),
+              FirstTime = first(timestamp_new)) %>%
+    filter(FirstTime < 2500)  %>%
+    mutate(FirstLook = ifelse(FirstT == TRUE, 'Change', 'No_Change')) %>%
+    ungroup()
+
+  # join back and apply classification to both
+  ETanalysis4_3b <- left_join(ETanalysis, ETanalysis4_2b) %>%
+    filter(condition != 0)
+
+  final_window <- subset_by_window(ETanalysis4_3b,
+                                   window_start_time = 1750, # final restricted time for 5 sec analysis
+                                   window_end_time = 6750,
+                                   rezero = F,
+                                   remove = T)
+
+  #get prop 5
+  windowCP <- make_time_window_data(final_window,
+                                    aois = 'target',
+                                    predictor_columns = c('video_condition', 'condition'),
+                                    summarize_by = 'ID')
+
+  # get window for NC C
+  windowMis <- make_time_window_data(final_window,
+                                     aois = 'target',
+                                     predictor_columns = c(
+                                       'FirstLook', 'video_condition', 'condition'),
+                                     summarize_by = 'ID')
+
+  windowFL <- windowMis
+
+  # windowMisWide <- windowFL %>%
+  #   select(ID, video_condition, condition, FirstLook, Prop) %>%
+  #   spread(FirstLook, Prop) %>%
+  #   rename(Prop_C = Change) %>%
+  #   rename(Prop_NC = No_Change) %>%
+  #   #select(-No_Change) %>%
+  #   mutate(Prop_NC = ifelse(is.nan(Prop_NC), NA, Prop_NC),
+  #          Prop_C = ifelse(is.nan(Prop_C), NA, Prop_C))
+
+  windowMisWide <- windowFL %>%
+    mutate(FirstLook = factor(FirstLook, levels = c("Change", "No_Change"))) %>%
+    select(ID, video_condition, condition, FirstLook, Prop) %>%
+    pivot_wider(
+      names_from = FirstLook,
+      values_from = Prop,
+      names_expand = TRUE
+    ) %>%
+    rename(
+      Prop_C = Change,
+      Prop_NC = No_Change
+    ) %>%
+    mutate(across(c(Prop_C, Prop_NC), ~ ifelse(is.nan(.), NA, .)))
+
+  windowMisWideOutput <- windowMisWide %>%
+    select(ID, video_condition, condition, Prop_C, Prop_NC)
+
+  windowCPOutput <- windowCP %>%
+    select(ID, video_condition, condition, Prop)
+
+  windowOutputFull <- full_join(windowMisWideOutput, windowCPOutput)
+
+  return(windowOutputFull)
+}
+
+
+
 
 #' Master run
 #' Do the lot!

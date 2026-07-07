@@ -80,11 +80,11 @@ run_mallet_data <- function(path, write = T){
   pin_dat <- create_pingu_data(pingu)
 
   if(write == T){
-    write_csv(number_check, 'summary_file.csv')
-    write_csv(all_dat, 'vwm_file.csv')
-    write_csv(pin_dat, 'pingu_file.csv')
+    write_csv(number_check, paste(path,'summary_file.csv', sep = '/'))
+    write_csv(all_dat, paste(path,'vwm_file.csv', sep = '/'))
+    write_csv(pin_dat, paste(path,'pingu_file.csv', sep = '/'))
   }
-  fils <- list(number_check, all_dat, pingu_dat)
+  fils <- list(number_check, all_dat, pin_dat)
   return(fils)
   message('processing complete')
 }

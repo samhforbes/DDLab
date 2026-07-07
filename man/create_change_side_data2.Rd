@@ -14,7 +14,8 @@ create_change_side_data2(
   aoi_columns = c("target", "distractor"),
   trackloss_column = "trackloss",
   participant_column = "ID",
-  trial_column = "trial"
+  trial_column = "trial",
+  summary = TRUE
 )
 }
 \arguments{

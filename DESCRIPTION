@@ -1,7 +1,7 @@
 Package: DDLab
 Type: Package
 Title: An R package for solving common DDLab problems
-Version: 0.0.1
+Version: 0.0.2
 Date: 2026-03-03
 Authors@R: person("Samuel", "Forbes", email = "samuel.h.forbes@gmail.com", role = c("aut", "cre"))
 Description: An R package for use within the DDLab - the current iteration is only looking at Eyetracking stuff

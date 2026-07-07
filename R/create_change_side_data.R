@@ -187,7 +187,8 @@ create_change_side_data2 <- function(data, window_start = 1750, window_stop = 67
                                     aoi_columns = c('target', 'distractor'),
                                     trackloss_column = 'trackloss',
                                     participant_column = 'ID',
-                                    trial_column = 'trial'){
+                                    trial_column = 'trial',
+                                    summary = TRUE){
 
   # to do: come back and generalise
   data <- data %>%
@@ -258,6 +259,7 @@ create_change_side_data2 <- function(data, window_start = 1750, window_stop = 67
                                    remove = T)
 
   #get prop 5
+  if(summary == TRUE){
   windowCP <- make_time_window_data(final_window,
                                     aois = 'target',
                                     predictor_columns = c('video_condition', 'condition'),
@@ -304,6 +306,53 @@ create_change_side_data2 <- function(data, window_start = 1750, window_stop = 67
   windowOutputFull <- full_join(windowMisWideOutput, windowCPOutput)
 
   return(windowOutputFull)
+  }else{
+    windowCP <- make_time_window_data(final_window,
+                                      aois = 'target',
+                                      predictor_columns = c('video_condition', 'condition'))
+
+    # get window for NC C
+    windowMis <- make_time_window_data(final_window,
+                                       aois = 'target',
+                                       predictor_columns = c(
+                                         'FirstLook', 'video_condition', 'condition'))
+
+    windowFL <- windowMis
+
+    # windowMisWide <- windowFL %>%
+    #   select(ID, video_condition, condition, FirstLook, Prop) %>%
+    #   spread(FirstLook, Prop) %>%
+    #   rename(Prop_C = Change) %>%
+    #   rename(Prop_NC = No_Change) %>%
+    #   #select(-No_Change) %>%
+    #   mutate(Prop_NC = ifelse(is.nan(Prop_NC), NA, Prop_NC),
+    #          Prop_C = ifelse(is.nan(Prop_C), NA, Prop_C))
+
+    windowMisWide <- windowFL %>%
+      mutate(FirstLook = factor(FirstLook, levels = c("Change", "No_Change"))) %>%
+      select(ID, trial, video_condition, condition, FirstLook, Prop) %>%
+      pivot_wider(
+        names_from = FirstLook,
+        values_from = Prop,
+        names_expand = TRUE
+      ) %>%
+      rename(
+        Prop_C = Change,
+        Prop_NC = No_Change
+      ) %>%
+      mutate(across(c(Prop_C, Prop_NC), ~ ifelse(is.nan(.), NA, .)))
+
+    windowMisWideOutput <- windowMisWide %>%
+      select(ID, trial, video_condition, condition, Prop_C, Prop_NC)
+
+    windowCPOutput <- windowCP %>%
+      select(ID, trial, video_condition, condition, Prop)
+
+    windowOutputFull <- full_join(windowMisWideOutput, windowCPOutput)
+
+    return(windowOutputFull)
+  }
+
 }
 
 

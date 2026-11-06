@@ -432,7 +432,12 @@ convert_and_compare <- function(input_file, output_location = '', save_raw = F, 
     }
 
     cs_data <- create_change_side_data(data = data)
-    ve_data <- create_manual_trial_data2(data = full)
+
+    full2 <- full %>%
+      mutate(direction = case_when(direction == 'L' ~ 'left',
+                                   direction == 'R' ~ 'right'))
+    ve_data <- create_manual_trial_data2(data = full2)
+
     kappa <- get_kappa_value(data = full,
                              start_time = .kappa_start,
                              stop_time = .kappa_stop)
